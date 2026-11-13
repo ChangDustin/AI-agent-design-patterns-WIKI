@@ -1,0 +1,7 @@
+{"kind": "node", "node": "load_wiki", "seconds": 0.2, "info": {"lint_errors": 0, "lint_warnings": 0, "gaps": 1, "pages": 39}, "time": "2026-11-13T00:02:24"}
+{"kind": "node", "node": "plan_outline", "seconds": 2.8, "info": null, "time": "2026-11-13T00:02:27"}
+{"kind": "rejected", "node": "plan_outline", "gate": "大綱閘門", "count": 1, "details": {"outline": ["第 8 頁 的標題要 1～16 字", "第 10 頁 的標題要 1～16 字", "第 17 頁 的標題要 1～16 字", "第 19 頁 的 pages 要列 1～3 個 Wiki 頁"]}, "time": "2026-11-13T00:02:27"}
+{"kind": "node", "node": "check_outline", "seconds": 0.0, "info": {"issues": 4}, "time": "2026-11-13T00:02:27"}
+{"kind": "node", "node": "plan_outline", "seconds": 4.1, "info": null, "time": "2026-11-13T00:02:31"}
+{"kind": "node", "node": "check_outline", "seconds": 0.0, "info": {"slides": 18}, "time": "2026-11-13T00:02:31"}
+{"kind": "node", "node": "finalize", "seconds": 0.0, "info": null, "time": "2026-11-13T00:02:31"}

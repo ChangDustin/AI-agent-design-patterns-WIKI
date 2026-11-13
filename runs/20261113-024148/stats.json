@@ -1,0 +1,52 @@
+{
+  "load_wiki": {
+    "runs": 1,
+    "seconds": 0.2155013084411621,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "check_slides": {
+    "runs": 3,
+    "seconds": 25.96205973625183,
+    "llm_calls": 5,
+    "tokens": 8895,
+    "format_errors": 0,
+    "rate_limited": 2,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "revise_slides": {
+    "runs": 2,
+    "seconds": 26.789912939071655,
+    "llm_calls": 6,
+    "tokens": 6287,
+    "format_errors": 0,
+    "rate_limited": 4,
+    "exceptions": 0,
+    "rejected": 3
+  },
+  "render_html": {
+    "runs": 1,
+    "seconds": 0.046591758728027344,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "check_render": {
+    "runs": 1,
+    "seconds": 12.984080076217651,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  }
+}

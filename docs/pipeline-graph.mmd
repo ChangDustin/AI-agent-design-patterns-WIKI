@@ -1,0 +1,43 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	load_wiki(load_wiki)
+	plan_outline(plan_outline)
+	check_outline(check_outline)
+	retrieve(retrieve)
+	draft_slides(draft_slides)
+	check_slides(check_slides)
+	revise_slides(revise_slides)
+	render_html(render_html)
+	check_render(check_render)
+	finalize(finalize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> load_wiki;
+	check_outline -.-> finalize;
+	check_outline -.-> plan_outline;
+	check_outline -.-> retrieve;
+	check_render -.-> finalize;
+	check_render -.-> revise_slides;
+	check_slides -.-> render_html;
+	check_slides -.-> revise_slides;
+	draft_slides --> check_slides;
+	load_wiki -.-> check_render;
+	load_wiki -.-> check_slides;
+	load_wiki -.-> draft_slides;
+	load_wiki -.-> finalize;
+	load_wiki -.-> plan_outline;
+	load_wiki -.-> render_html;
+	load_wiki -.-> retrieve;
+	load_wiki -.-> revise_slides;
+	plan_outline --> check_outline;
+	render_html --> check_render;
+	retrieve --> draft_slides;
+	revise_slides --> check_slides;
+	finalize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

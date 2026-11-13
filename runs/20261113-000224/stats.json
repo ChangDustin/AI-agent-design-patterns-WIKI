@@ -1,0 +1,32 @@
+{
+  "load_wiki": {
+    "runs": 1,
+    "seconds": 0.17446589469909668,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "plan_outline": {
+    "runs": 2,
+    "seconds": 6.877489805221558,
+    "llm_calls": 2,
+    "tokens": 7180,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 1
+  },
+  "check_outline": {
+    "runs": 2,
+    "seconds": 0.010855913162231445,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  }
+}

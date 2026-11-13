@@ -1,0 +1,22 @@
+{
+  "slides": [
+    {"id": "s01", "type": "cover", "title": "AI 代理設計模式", "goal": "點出主題：讓 AI 像人一樣分多步把事情做好", "pages": [], "visual": "none"},
+    {"id": "s02", "type": "hook", "title": "同一題，誰的分數高？", "goal": "用 HumanEval 分數 48.1%、67.0%、95.1% 說明改流程比換更強的模型更有效", "pages": ["concepts/agentic-workflow.md"], "visual": "none"},
+    {"id": "s03", "type": "concept", "title": "代理式工作流程", "goal": "不要一次寫完，而是像人寫作文一樣分多步修改（寫作文不准按倒退鍵的比喻）", "pages": ["concepts/agentic-workflow.md"], "visual": "none"},
+    {"id": "s04", "type": "concept", "title": "四種招式一次看", "goal": "介紹反思、工具使用、規劃、多代理協作四種模式，以及哪些比較穩定", "pages": ["overview.md", "concepts/agentic-workflow.md"], "visual": "patterns"},
+    {"id": "s05", "type": "concept", "title": "反思：自己改作文", "goal": "LLM 檢查自己的產出再重寫；用 Self-Refine 的數據說明它有效，但不是萬靈丹", "pages": ["concepts/reflection.md", "concepts/self-refine.md"], "visual": "none"},
+    {"id": "s06", "type": "steps", "title": "反思實作：心形圖貼文", "goal": "用課程的 Python 心形圖貼文示範：需求 → 初稿 → 評論 → 第二版", "pages": ["concepts/reflection.md", "sources/tsai-2026-agent-notebooks.md"], "visual": "none"},
+    {"id": "s07", "type": "concept", "title": "工具使用：帶計算機", "goal": "模型只寫出呼叫請求，真正執行的是外部程式；用考試帶計算機的比喻", "pages": ["concepts/tool-use.md"], "visual": "none"},
+    {"id": "s08", "type": "steps", "title": "麥茶 20 杯夠不夠？", "goal": "用課程的麥茶例子示範三階段：模型轉成請求 → 程式執行 → 依結果回答", "pages": ["concepts/tool-use.md", "sources/tsai-2026-agent-notebooks.md"], "visual": "none"},
+    {"id": "s09", "type": "concept", "title": "規劃：出國排行程", "goal": "規劃有兩種意思：LLM 自己決定步驟，或先寫可編輯的計畫再照著做（可頌賣完了的例子）", "pages": ["concepts/planning.md"], "visual": "none"},
+    {"id": "s10", "type": "steps", "title": "ReAct：想→做→看", "goal": "用煮菜比喻和帶傘例子說明 想法 → 動作 → 觀察 的迴圈，它是代理最小的原型", "pages": ["concepts/react.md"], "visual": "react_loop"},
+    {"id": "s11", "type": "concept", "title": "多代理：分組報告", "goal": "多個角色分工合作；研究小組的例子，效果好 90.2% 但 token 用量約 15 倍", "pages": ["concepts/multi-agent-collaboration.md"], "visual": "none"},
+    {"id": "s12", "type": "compare", "title": "跟團 vs. 自由行", "goal": "比較工作流程（程式寫死路徑）和代理（LLM 自己決定下一步）", "pages": ["concepts/workflow-vs-agent.md"], "visual": "none"},
+    {"id": "s13", "type": "concept", "title": "能簡單就簡單", "goal": "先試最簡單的方法，複雜度要證明有用才往上加", "pages": ["concepts/workflow-vs-agent.md", "concepts/agentic-workflow.md"], "visual": "ladder"},
+    {"id": "s14", "type": "quiz", "title": "小測驗：誰在執行？", "goal": "檢查觀眾是否懂：工具使用時真正執行的是程式，不是模型", "pages": ["concepts/tool-use.md"], "visual": "none"},
+    {"id": "s15", "type": "concept", "title": "代理也會出包", "goal": "代理的限制：卡在迴圈、自評有盲點、成本高、錯誤會累積", "pages": ["concepts/agent-limitations.md", "concepts/llm-feedback.md"], "visual": "none"},
+    {"id": "s16", "type": "concept", "title": "AI 做事，人來把關", "goal": "人在迴圈中：在關鍵處讓人檢查、修改、決定", "pages": ["concepts/human-in-the-loop.md"], "visual": "none"},
+    {"id": "s17", "type": "quiz", "title": "小測驗：該用代理嗎？", "goal": "判斷什麼情況用工作流程就夠、什麼情況才需要代理", "pages": ["concepts/workflow-vs-agent.md", "concepts/agent-limitations.md"], "visual": "none"},
+    {"id": "s18", "type": "summary", "title": "本章重點", "goal": "回顧：分多步工作、四種模式、能簡單就簡單、AI 做事人來把關", "pages": ["overview.md", "concepts/workflow-vs-agent.md", "concepts/human-in-the-loop.md"], "visual": "none"}
+  ]
+}

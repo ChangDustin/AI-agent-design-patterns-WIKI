@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+# API 金鑰只放本機
+.env
+# 原文有著作權：只上傳 raw/README.md 的出處清單
+raw/*/
+# 只在本機的筆記（例如含姓名、學號的繳交說明）
+*.local.md

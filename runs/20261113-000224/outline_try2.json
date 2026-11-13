@@ -1,0 +1,171 @@
+{
+  "draft": {
+    "slides": [
+      {
+        "type": "cover",
+        "title": "AI 代理設計模式簡介",
+        "goal": "讓觀眾知道本次簡報主題與流程",
+        "pages": [],
+        "visual": "none"
+      },
+      {
+        "type": "hook",
+        "title": "AI 代理的崛起",
+        "goal": "用日常例子抓住注意力",
+        "pages": [
+          "overview.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "concept",
+        "title": "什麼是 AI 代理",
+        "goal": "說明 AI 代理的基本概念與工作流程 vs 代理的差異",
+        "pages": [
+          "concepts/workflow-vs-agent.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "concept",
+        "title": "代理式工作流程",
+        "goal": "介紹 LLM 多步呼叫的工作流程概念",
+        "pages": [
+          "concepts/agentic-workflow.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "concept",
+        "title": "反思模式",
+        "goal": "了解 LLM 如何自我檢查與改寫",
+        "pages": [
+          "concepts/reflection.md"
+        ],
+        "visual": "patterns"
+      },
+      {
+        "type": "steps",
+        "title": "反思實作步驟",
+        "goal": "示範反思模式的具體流程",
+        "pages": [
+          "concepts/self-refine.md"
+        ],
+        "visual": "ladder"
+      },
+      {
+        "type": "concept",
+        "title": "工具使用模式",
+        "goal": "說明 LLM 呼叫外部工具的方式",
+        "pages": [
+          "concepts/tool-use.md"
+        ],
+        "visual": "patterns"
+      },
+      {
+        "type": "steps",
+        "title": "工具使用步驟",
+        "goal": "展示工具使用的實作流程",
+        "pages": [
+          "concepts/tool-use.md"
+        ],
+        "visual": "workflow_agent"
+      },
+      {
+        "type": "concept",
+        "title": "規劃模式",
+        "goal": "解釋 LLM 如何自行規劃或先產生可編輯計畫",
+        "pages": [
+          "concepts/planning.md"
+        ],
+        "visual": "patterns"
+      },
+      {
+        "type": "steps",
+        "title": "規劃步驟",
+        "goal": "說明規劃模式的操作步驟",
+        "pages": [
+          "concepts/planning.md"
+        ],
+        "visual": "ladder"
+      },
+      {
+        "type": "concept",
+        "title": "多代理協作",
+        "goal": "介紹多個 LLM 角色分工合作的概念",
+        "pages": [
+          "concepts/multi-agent-collaboration.md"
+        ],
+        "visual": "patterns"
+      },
+      {
+        "type": "steps",
+        "title": "多代理流程",
+        "goal": "示範多代理協作的實作流程",
+        "pages": [
+          "concepts/multi-agent-collaboration.md"
+        ],
+        "visual": "workflow_agent"
+      },
+      {
+        "type": "concept",
+        "title": "限制與風險",
+        "goal": "說明 AI 代理的主要限制與可能風險",
+        "pages": [
+          "concepts/agent-limitations.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "concept",
+        "title": "人在迴圈中",
+        "goal": "說明人類在 AI 代理迴圈中的角色與重要性",
+        "pages": [
+          "concepts/human-in-the-loop.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "quiz",
+        "title": "小測驗：概念檢核",
+        "goal": "檢查觀眾對四種模式與限制的理解",
+        "pages": [
+          "concepts/reflection.md",
+          "concepts/tool-use.md",
+          "concepts/planning.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "compare",
+        "title": "代理 vs 工作流程",
+        "goal": "比較傳統工作流程與 AI 代理的差異",
+        "pages": [
+          "concepts/workflow-vs-agent.md",
+          "concepts/agentic-workflow.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "quiz",
+        "title": "小測驗：限制與人因",
+        "goal": "測試對限制與 Human‑in‑the‑Loop 的認識",
+        "pages": [
+          "concepts/agent-limitations.md",
+          "concepts/human-in-the-loop.md"
+        ],
+        "visual": "none"
+      },
+      {
+        "type": "summary",
+        "title": "總結與未來展望",
+        "goal": "回顧重點並提供後續學習方向",
+        "pages": [
+          "overview.md"
+        ],
+        "visual": "none"
+      }
+    ]
+  },
+  "issues": []
+}

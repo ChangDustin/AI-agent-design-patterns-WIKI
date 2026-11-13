@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ deck_title }}</title>
+<meta name="description" content="由 LLM Wiki（7 篇資料）經 LangGraph pipeline 產生的教學簡報，每頁都標出依據的 Wiki 頁。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+:root {
+  --paper: #FAF7EF;
+  --ink: #22314A;
+  --pencil: #625E56;
+  --green: #3A7F5C;
+  --grid: #B7D5C3;
+  --grid-strong: #8DB99F;
+  --red: #C0313A;
+  --sticky: #FBEFA3;
+  --desk: #D8D1C2;
+  --round: "Huninn", "jf open 粉圓 2.0", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --kai: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "Kaiti TC", serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--desk); color: var(--ink); font-family: var(--round); overflow: hidden; }
+.viewport { position: fixed; inset: 0 0 56px 0; overflow: hidden; }
+/* 用絕對定位置中再縮放：grid 置中時，固定 1280px 寬的投影片在比它窄的視窗（手機、iframe）會偏到右下 */
+.stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; transform: translate(-50%, -50%); transform-origin: center; }
+
+/* 一頁＝一張稿紙 */
+.slide { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 40px 80px 0 136px;
+  background: var(--paper); overflow: hidden; visibility: hidden; opacity: 0; transition: opacity .3s ease, visibility 0s .3s; }
+.slide.is-active { visibility: visible; opacity: 1; transition: opacity .3s ease; }
+.slide::before { content: ""; position: absolute; top: 0; bottom: 0; left: 108px; border-left: 2px solid var(--grid); }
+.page-no { position: absolute; left: 32px; top: 44px; width: 46px; height: 46px; border: 1.5px solid var(--green);
+  border-radius: 50%; display: grid; place-items: center; font: 20px/1 var(--kai); color: var(--green); }
+
+/* 標題：寫進一排稿紙格子，題目置中，英數兩字一格 */
+.title-row { flex: none; display: flex; justify-content: center; margin-bottom: 28px; --cell: 52px; }
+.cells { display: flex; border: 2px solid var(--grid-strong); }
+.cell { width: calc(var(--cell) * var(--span, 1)); height: var(--cell); display: grid; place-items: center;
+  border-right: 1.5px solid var(--grid); font: 400 calc(var(--cell) * .68)/1 var(--kai); color: var(--ink); }
+.cell:last-child { border-right: 0; }
+.cell.latin { font-size: calc(var(--cell) * .58); letter-spacing: .02em; }
+
+/* 內容在剩下的空間垂直置中；放不下時 auto margin 變 0，自動靠上，超出的部分照樣量得到 */
+.body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; font-size: 26px; line-height: 1.6; }
+.body > * { margin-block: auto; }
+.cites { flex: none; height: 62px; display: flex; flex-wrap: wrap; align-items: center; align-content: center;
+  gap: 2px 0; font-size: 16px; line-height: 1.4; color: var(--pencil); border-top: 1.5px dashed var(--grid); }
+.cites a { color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor; }
+.cites a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.ref { color: var(--green); font-size: .6em; margin-left: 3px; vertical-align: .6em; line-height: 0; }
+.missing { font: 26px/1.6 var(--kai); color: var(--red); }
+
+/* concept：定義＋生活比喻（便利貼）＋要點 */
+.concept { display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 48px; align-items: center; }
+.definition { font-size: 32px; line-height: 1.55; margin: 0 0 20px; }
+.points { list-style: none; margin: 0; padding: 0; }
+.points li { position: relative; padding-left: 40px; margin: 0 0 12px; }
+.points li::before { content: ""; position: absolute; left: 3px; top: .42em; width: 17px; height: 17px; border: 2px solid var(--green); }
+.sticky { position: relative; background: var(--sticky); padding: 30px 28px 26px; transform: rotate(-1.6deg);
+  font: 25px/1.65 var(--kai); box-shadow: 2px 3px 0 rgba(34, 49, 74, .12); margin-top: 10px; }
+.sticky::before { content: ""; position: absolute; top: -12px; left: 50%; width: 96px; height: 26px;
+  transform: translateX(-50%) rotate(2deg); background: rgba(201, 223, 209, .8); }
+.sticky .lead { color: var(--pencil); }
+.has-figure .sticky { font-size: 22px; padding: 22px 26px 20px; margin-top: 22px; max-width: 560px; }
+.has-figure .definition { font-size: 28px; margin-bottom: 14px; }
+code { font: .84em/1 Consolas, "Cascadia Mono", "Huninn", "Microsoft JhengHei", monospace; background: rgba(201, 223, 209, .45);
+  padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+.figure svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* steps：有順序的步驟才用編號 */
+.steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 44px; margin-top: 8px; }
+.step { position: relative; }
+.step-no { width: 46px; height: 46px; border: 2px solid var(--green); border-radius: 50%; display: grid; place-items: center;
+  font: 400 24px/1 var(--kai); color: var(--green); margin-bottom: 12px; }
+.step h3 { font: 400 31px/1.3 var(--kai); margin: 0 0 8px; }
+.step p { margin: 0; font-size: 24px; line-height: 1.6; }
+.step:not(:last-child)::after { content: ""; position: absolute; top: 15px; right: -38px; width: 32px; height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'%3E%3Cpath d='M1 8.5c9-1 18 1 28-.5M22 2.5l7.5 5.6L22 14' fill='none' stroke='%233A7F5C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain; }
+.steps-wrap.has-figure { display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 44px; }
+.has-figure .steps { grid-auto-flow: row; gap: 14px; }
+.has-figure .step { display: grid; grid-template-columns: 46px minmax(0, 1fr); column-gap: 16px; }
+.has-figure .step-no { grid-row: span 2; margin: 0; }
+.has-figure .step h3 { font-size: 27px; margin: 0; }
+.has-figure .step p { font-size: 22px; }
+.has-figure .step::after { display: none; }
+
+/* compare：翻開的筆記本左右兩頁 */
+.spread { position: relative; display: grid; grid-template-columns: 1fr 1fr; }
+.spread::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 8px; border-left: 2px dashed var(--grid); }
+.side { padding: 0 40px; }
+.side:first-child { padding-left: 0; }
+.side h3 { font: 400 36px/1.3 var(--kai); margin: 0 0 18px; padding-bottom: 8px; border-bottom: 2px solid var(--grid); }
+
+/* hook：數字寫成考卷上的紅筆分數 */
+.papers { display: flex; justify-content: center; gap: 44px; margin-top: 4px; }
+.exam { width: 272px; height: 292px; background: #fff; border: 1.5px solid var(--grid); padding: 20px 22px 16px;
+  display: flex; flex-direction: column; }
+.exam:nth-child(1) { transform: rotate(-2deg); }
+.exam:nth-child(2) { transform: rotate(1.2deg); }
+.exam:nth-child(3) { transform: rotate(-.8deg); }
+.exam .label { font-size: 21px; line-height: 1.45; padding-bottom: 10px; border-bottom: 1.5px solid var(--grid); min-height: 96px; }
+.score { position: relative; margin: auto; padding: 16px 24px; font: 400 64px/1 var(--kai); color: var(--red); white-space: nowrap; }
+.score svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.takeaway { text-align: center; font-size: 28px; margin: 30px 0 0; }
+
+/* quiz：選完才揭曉，紅筆圈出正解 */
+.question { font: 400 36px/1.5 var(--kai); margin: 0 0 24px; }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; }
+.option { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 20px; text-align: left;
+  font: 24px/1.45 var(--round); color: var(--ink); background: transparent; border: 1.5px solid var(--grid); border-radius: 12px; cursor: pointer; }
+.option:hover { border-color: var(--green); }
+.option:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.option .letter { flex: none; width: 40px; height: 40px; border: 1.5px solid var(--green); border-radius: 50%;
+  display: grid; place-items: center; font: 400 22px/1 var(--kai); color: var(--green); }
+.option .ring { position: absolute; left: -8px; top: -10px; width: calc(100% + 16px); height: calc(100% + 20px);
+  pointer-events: none; overflow: visible; opacity: 0; transition: opacity .35s ease; }
+.option .ring ellipse { fill: none; stroke: var(--red); stroke-width: 3; }
+.option.correct .ring { opacity: 1; }
+.option.wrong::after { content: "✗"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%) rotate(-8deg);
+  font: 400 42px/1 var(--kai); color: var(--red); }
+.answered .option { cursor: default; }
+.explain { margin: 22px 0 0; font: 26px/1.6 var(--kai); color: var(--red); visibility: hidden; }
+.answered .explain { visibility: visible; }
+
+/* summary：本章重點，老師紅筆打勾 */
+.checklist { list-style: none; margin: 6px 0 0; padding: 0; }
+.checklist li { position: relative; padding-left: 54px; margin: 0 0 18px; font-size: 28px; }
+.checklist li::before { content: ""; position: absolute; left: 0; top: .2em; width: 30px; height: 30px; border: 2px solid var(--green); }
+.checklist li::after { content: ""; position: absolute; left: 9px; top: .05em; width: 11px; height: 22px;
+  border: solid var(--red); border-width: 0 4px 4px 0; transform: rotate(40deg); }
+
+/* cover：整頁是一張稿紙，行與行之間留一條空白 */
+.slide--cover { justify-content: center; align-items: center; padding: 0 80px 0 136px; }
+.sheet { display: flex; flex-direction: column; gap: 10px; --cell: 62px; }
+.sheet .cells { border-width: 1.5px; }
+.sheet .title .cell { font-size: calc(var(--cell) * .72); }
+.sheet .text .cell { font-size: calc(var(--cell) * .56); }
+.cover-meta { margin: 22px 0 0; font-size: 18px; color: var(--pencil); }
+
+/* 翻頁介面（在稿紙外面） */
+.controls { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; padding: 0 20px; font-size: 16px; }
+.hint { margin-right: auto; color: #4f4b44; }
+.controls button { font: 16px var(--round); color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink);
+  border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+.controls button:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.counter { min-width: 72px; text-align: center; }
+.progress { position: fixed; left: 0; bottom: 0; height: 4px; width: 0; background: var(--green); transition: width .3s; }
+.notes { position: fixed; left: 50%; bottom: 66px; transform: translateX(-50%); width: min(900px, 92vw); max-height: 40vh; overflow: auto;
+  display: none; padding: 16px 20px; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 10px; font: 19px/1.7 var(--round); }
+body.show-notes .notes { display: block; }
+@media (max-width: 640px) { .hint { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.is-active, .progress, .option.correct .ring ellipse { transition: none; }
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { overflow: visible; background: none; }
+  .viewport { position: static; display: block; }
+  .stage { position: static; transform: none !important; width: auto; height: auto; }
+  .slide { position: relative; width: 1280px; height: 720px; visibility: visible; opacity: 1; break-after: page; }
+  .controls, .progress, .notes { display: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</svg>
+{%- macro cited(item) -%}
+{{ item.text | code }}{% if item.marks %}<sup class="ref">{{ item.marks }}</sup>{% endif %}
+{%- endmacro %}
+{%- macro title_row(cells) -%}
+<div class="title-row"><h2 class="cells" aria-label="{{ cells | map(attribute='text') | join('') }}">
+{%- for c in cells %}<span class="cell{% if c.latin %} latin{% endif %}" style="--span:{{ c.span }}" aria-hidden="true">{{ c.text }}</span>{% endfor -%}
+</h2></div>
+{%- endmacro %}
+{%- macro figure(name) -%}
+<div class="figure">
+{%- if name == 'patterns' %}
+<svg viewBox="0 0 360 360" role="img" aria-label="四種模式地圖：反思、工具使用（穩定度高）、規劃、多代理協作（較難預測）">
+  <g fill="none" stroke="var(--green)" stroke-width="2" filter="url(#rough)">
+    <rect x="6" y="6" width="166" height="166" rx="14"/><rect x="188" y="6" width="166" height="166" rx="14"/>
+    <rect x="6" y="188" width="166" height="166" rx="14"/><rect x="188" y="188" width="166" height="166" rx="14"/>
+  </g>
+  <g fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)">
+    <path d="M110 48a26 26 0 1 1-12-14"/><path d="M98 25l1 10-10 2"/>
+    <rect x="251" y="26" width="40" height="54" rx="5"/><rect x="258" y="33" width="26" height="11"/>
+    <path d="M262 55h0M271 55h0M280 55h0M262 66h0M271 66h0M280 66h0" stroke-width="5"/>
+    <path d="M58 262c10-20 22-24 32-8s22 10 30-12" stroke-dasharray="5 6"/><path d="M120 242v-30l18 8-18 8"/>
+    <circle cx="252" cy="226" r="9"/><circle cx="271" cy="218" r="9"/><circle cx="290" cy="226" r="9"/>
+    <path d="M237 256c2-12 28-12 30 0M256 248c2-12 28-12 30 0M275 256c2-12 28-12 30 0"/>
+  </g>
+  <g text-anchor="middle" fill="var(--ink)">
+    <!-- 穩定度依 wiki/overview.md（Ng 2024 的實務經驗） -->
+    <text x="89" y="112" style="font:700 24px var(--kai)">反思</text><text x="89" y="136" style="font:14px var(--round)" fill="var(--pencil)">自己檢查、自己改</text><text x="89" y="158" style="font:13px var(--round)" fill="var(--green)">穩定度：高</text>
+    <text x="271" y="112" style="font:700 24px var(--kai)">工具使用</text><text x="271" y="136" style="font:14px var(--round)" fill="var(--pencil)">會按計算機、會上網查</text><text x="271" y="158" style="font:13px var(--round)" fill="var(--green)">穩定度：高</text>
+    <text x="89" y="294" style="font:700 24px var(--kai)">規劃</text><text x="89" y="318" style="font:14px var(--round)" fill="var(--pencil)">自己拆步驟、隨機應變</text><text x="89" y="340" style="font:13px var(--round)" fill="var(--red)">穩定度：較難預測</text>
+    <text x="271" y="294" style="font:700 24px var(--kai)">多代理協作</text><text x="271" y="318" style="font:14px var(--round)" fill="var(--pencil)">分角色合作、互相討論</text><text x="271" y="340" style="font:13px var(--round)" fill="var(--red)">穩定度：較難預測</text>
+  </g>
+</svg>
+{%- elif name == 'ladder' %}
+<svg viewBox="0 0 360 360" role="img" aria-label="複雜度階梯：單次呼叫、增強型 LLM、工作流程、代理，先從最下面開始">
+  <path d="M8 316H96V244H184V172H272V100H352" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"/>
+  <g text-anchor="middle" style="font:18px var(--round)" fill="var(--ink)">
+    <text x="52" y="304">單次呼叫</text><text x="140" y="232">增強型 LLM</text><text x="228" y="160">工作流程</text><text x="312" y="88">代理</text>
+  </g>
+  <text x="8" y="30" style="font:15px var(--round)" fill="var(--pencil)">越往上：越複雜、越花錢，</text>
+  <text x="8" y="52" style="font:15px var(--round)" fill="var(--pencil)">也越難預測</text>
+  <path d="M60 352c-10-8-12-16-8-26M45 334l7-8 6 9" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" filter="url(#rough)"/>
+  <text x="74" y="352" style="font:700 21px var(--kai)" fill="var(--red)">先從這裡開始！</text>
+</svg>
+{%- elif name == 'react_loop' %}
+<svg viewBox="0 0 360 360" role="img" aria-label="想法、動作、觀察三個步驟反覆循環，直到完成">
+  <defs><marker id="arrow-loop" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round"/></marker></defs>
+  <g fill="none" stroke="var(--green)" stroke-width="2.2" filter="url(#rough)">
+    <circle cx="180" cy="62" r="48"/><circle cx="296" cy="266" r="48"/><circle cx="64" cy="266" r="48"/>
+  </g>
+  <g fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-loop)">
+    <path d="M226 78q56 30 70 136"/><path d="M248 286q-68 40-136 0"/><path d="M64 216q-2-96 70-140"/>
+  </g>
+  <g text-anchor="middle" dominant-baseline="central" style="font:700 26px var(--kai)" fill="var(--ink)">
+    <text x="180" y="62">想法</text><text x="296" y="266">動作</text><text x="64" y="266">觀察</text>
+  </g>
+  <text x="180" y="186" text-anchor="middle" style="font:17px var(--round)" fill="var(--pencil)">一輪一輪重複，</text>
+  <text x="180" y="210" text-anchor="middle" style="font:17px var(--round)" fill="var(--pencil)">直到完成</text>
+</svg>
+{%- elif name == 'workflow_agent' %}
+<svg viewBox="0 0 360 360" role="img" aria-label="工作流程像跟團，路線事先排好；代理像自由行，邊走邊決定">
+  <path d="M180 14V346" stroke="var(--grid)" stroke-width="2" stroke-dasharray="6 7"/>
+  <g text-anchor="middle">
+    <text x="88" y="34" style="font:700 24px var(--kai)" fill="var(--ink)">工作流程</text>
+    <text x="88" y="60" style="font:15px var(--round)" fill="var(--pencil)">跟團：路線排好</text>
+    <text x="272" y="34" style="font:700 24px var(--kai)" fill="var(--ink)">代理</text>
+    <text x="272" y="60" style="font:15px var(--round)" fill="var(--pencil)">自由行：邊走邊決定</text>
+  </g>
+  <g fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)">
+    <path d="M88 112V292"/><circle cx="88" cy="112" r="12" fill="var(--paper)"/><circle cx="88" cy="202" r="12" fill="var(--paper)"/><circle cx="88" cy="292" r="12" fill="var(--paper)"/>
+    <path d="M272 112c-50 20-40 50-30 70s-6 44 14 60 30 24 22 50" stroke-dasharray="6 7"/>
+    <path d="M272 112c34 18 52 42 30 66" stroke-dasharray="6 7"/>
+    <circle cx="272" cy="112" r="12" fill="var(--paper)"/><path d="M278 292v-36l22 10-22 10"/>
+  </g>
+  <text x="318" y="196" style="font:700 26px var(--kai)" fill="var(--red)">?</text>
+  <text x="214" y="236" style="font:700 26px var(--kai)" fill="var(--red)">?</text>
+</svg>
+{%- endif %}
+</div>
+{%- endmacro %}
+<main class="viewport">
+<div class="stage" id="stage">
+{%- for s in deck %}
+<section class="slide slide--{{ s.type }}" id="{{ s.id }}" aria-label="第 {{ s.n }} 頁：{{ s.title }}" data-notes="{{ s.notes }}">
+  {%- if s.type == 'cover' %}
+  <h1 class="sheet" aria-label="{{ s.title }}：{{ s.c.subtitle if s.c else '' }}">
+    {%- for row in s.sheet %}
+    <span class="cells {{ 'title' if loop.index == 2 else 'text' }}" aria-hidden="true">
+      {%- for c in row %}<span class="cell{% if c.latin %} latin{% endif %}" style="--span:{{ c.span }}">{{ c.text }}</span>{% endfor -%}
+    </span>
+    {%- endfor %}
+  </h1>
+  <p class="cover-meta">依據本專案 LLM Wiki 的 7 篇資料，由 LangGraph pipeline 產生（{{ run_id }}）</p>
+  {%- else %}
+  <span class="page-no" aria-hidden="true">{{ s.n }}</span>
+  {{ title_row(s.cells) }}
+  <div class="body">
+  {%- if s.c is none %}
+    <p class="missing">這一頁的內容沒有通過檢查，需要人工補上。</p>
+  {%- elif s.type == 'concept' %}
+    <div class="concept{% if s.visual %} has-figure{% endif %}">
+      <div>
+        <p class="definition">{{ cited(s.c.definition) }}</p>
+        {%- if s.c.points %}<ul class="points">{% for p in s.c.points %}<li>{{ cited(p) }}</li>{% endfor %}</ul>{% endif %}
+        {%- if s.visual and s.c.analogy %}<div class="sticky"><span class="lead">打個比方：</span>{{ cited(s.c.analogy) }}</div>{% endif %}
+      </div>
+      {%- if s.visual %}{{ figure(s.visual) }}
+      {%- elif s.c.analogy %}<div class="sticky"><span class="lead">打個比方：</span>{{ cited(s.c.analogy) }}</div>{% endif %}
+    </div>
+  {%- elif s.type == 'steps' %}
+    <div class="steps-wrap{% if s.visual %} has-figure{% endif %}">
+      <ol class="steps" style="list-style:none;margin:0;padding:0">
+      {%- for st in s.c.steps %}
+        <li class="step"><span class="step-no" aria-hidden="true">{{ loop.index }}</span><h3>{{ st.label }}</h3><p>{{ cited(st) }}</p></li>
+      {%- endfor %}
+      </ol>
+      {%- if s.visual %}{{ figure(s.visual) }}{% endif %}
+    </div>
+  {%- elif s.type == 'compare' %}
+    <div class="spread">
+      {%- for side in [s.c.left, s.c.right] %}
+      <div class="side"><h3>{{ side.heading }}</h3><ul class="points">{% for p in side.points %}<li>{{ cited(p) }}</li>{% endfor %}</ul></div>
+      {%- endfor %}
+    </div>
+  {%- elif s.type == 'hook' %}
+    <div class="papers">
+      {%- for st in s.c.stats %}
+      <div class="exam"><div class="label">{{ st.label }}{% if st.marks %}<sup class="ref">{{ st.marks }}</sup>{% endif %}</div>
+        <div class="score">{{ st.value }}<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M86 12C70 2 22 2 9 18S10 56 50 57 98 40 90 16" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
+      </div>
+      {%- endfor %}
+    </div>
+    {%- if s.c.takeaway %}<p class="takeaway">{{ cited(s.c.takeaway) }}</p>{% endif %}
+  {%- elif s.type == 'quiz' %}
+    <div class="quiz" data-answer="{{ s.c.answer }}">
+      <p class="question">{{ s.c.question }}</p>
+      <div class="options">
+      {%- for o in s.c.options %}
+        <button type="button" class="option"><span class="letter" aria-hidden="true">{{ 'ABCD'[loop.index0] }}</span><span>{{ o }}</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+      {%- endfor %}
+      </div>
+      <p class="explain" aria-live="polite">解析：{{ cited(s.c.explanation) }}</p>
+    </div>
+  {%- elif s.type == 'summary' %}
+    <ul class="checklist">{% for p in s.c.points %}<li>{{ cited(p) }}</li>{% endfor %}</ul>
+  {%- endif %}
+  </div>
+  <footer class="cites">
+    {%- if s.refs %}本頁依據 Wiki：{% for r in s.refs %}<a href="{{ r.href }}" target="_blank" rel="noopener">{{ r.mark }}{{ r.title }}</a>{% if not loop.last %}、{% endif %}{% endfor %}
+    {%- else %}本頁沒有引用 Wiki 頁{% endif %}
+  </footer>
+  {%- endif %}
+</section>
+{%- endfor %}
+</div>
+</main>
+<div class="notes" id="notes" role="region" aria-label="講者備註" aria-live="polite"></div>
+<nav class="controls" aria-label="翻頁">
+  <span class="hint">用方向鍵翻頁，按 N 看講者備註</span>
+  <button type="button" id="prev">上一頁</button>
+  <span class="counter" id="counter" aria-live="polite"></span>
+  <button type="button" id="next">下一頁</button>
+  <button type="button" id="toggle-notes" aria-controls="notes" aria-expanded="false">講者備註</button>
+</nav>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const slides = [...document.querySelectorAll('.slide')];
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const notes = document.getElementById('notes');
+  const notesButton = document.getElementById('toggle-notes');
+  let current = 0;
+
+  function fit() {
+    const scale = Math.min(window.innerWidth / 1280, (window.innerHeight - 56) / 720);
+    stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  function go(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => {
+      s.classList.toggle('is-active', k === current);
+      s.toggleAttribute('inert', k !== current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = `${(current + 1) / slides.length * 100}%`;
+    notes.textContent = slides[current].dataset.notes || '這頁沒有講者備註。';
+    history.replaceState(null, '', `#${current + 1}`);
+  }
+  function toggleNotes() {
+    const open = document.body.classList.toggle('show-notes');
+    notesButton.setAttribute('aria-expanded', String(open));
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  notesButton.addEventListener('click', toggleNotes);
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+    else if (e.key === 'n' || e.key === 'N') toggleNotes();
+    else if (/^[1-4]$/.test(e.key)) {
+      const option = slides[current].querySelectorAll('.option')[Number(e.key) - 1];
+      if (option) option.click();
+    }
+  });
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+    touchX = null;
+  });
+  document.querySelectorAll('.quiz').forEach((quiz) => {
+    const answer = Number(quiz.dataset.answer);
+    const options = [...quiz.querySelectorAll('.option')];
+    options.forEach((button, k) => button.addEventListener('click', () => {
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      if (k !== answer) button.classList.add('wrong');
+      if (options[answer]) options[answer].classList.add('correct');
+      options.forEach((o) => o.setAttribute('aria-disabled', 'true'));
+    }));
+  });
+  window.addEventListener('resize', fit);
+  window.deck = { go, count: slides.length };
+  fit();
+  go((parseInt(location.hash.slice(1), 10) || 1) - 1);
+})();
+</script>
+</body>
+</html>

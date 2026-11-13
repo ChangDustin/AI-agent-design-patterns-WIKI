@@ -1,0 +1,32 @@
+{
+  "load_wiki": {
+    "runs": 1,
+    "seconds": 0.18107032775878906,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "retrieve": {
+    "runs": 1,
+    "seconds": 0.0008938312530517578,
+    "llm_calls": 0,
+    "tokens": 0,
+    "format_errors": 0,
+    "rate_limited": 0,
+    "exceptions": 0,
+    "rejected": 0
+  },
+  "draft_slides": {
+    "runs": 1,
+    "seconds": 146.41321682929993,
+    "llm_calls": 16,
+    "tokens": 18327,
+    "format_errors": 3,
+    "rate_limited": 9,
+    "exceptions": 1,
+    "rejected": 0
+  }
+}

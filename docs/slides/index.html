@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 代理設計模式</title>
+<meta name="description" content="由 LLM Wiki（7 篇資料）經 LangGraph pipeline 產生的教學簡報，每頁都標出依據的 Wiki 頁。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Huninn&family=LXGW+WenKai+TC:wght@400;700&display=swap">
+<style>
+:root {
+  --paper: #FAF7EF;
+  --ink: #22314A;
+  --pencil: #625E56;
+  --green: #3A7F5C;
+  --grid: #B7D5C3;
+  --grid-strong: #8DB99F;
+  --red: #C0313A;
+  --sticky: #FBEFA3;
+  --desk: #D8D1C2;
+  --round: "Huninn", "jf open 粉圓 2.0", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --kai: "LXGW WenKai TC", "BiauKai", "DFKai-SB", "Kaiti TC", serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--desk); color: var(--ink); font-family: var(--round); overflow: hidden; }
+.viewport { position: fixed; inset: 0 0 56px 0; overflow: hidden; }
+/* 用絕對定位置中再縮放：grid 置中時，固定 1280px 寬的投影片在比它窄的視窗（手機、iframe）會偏到右下 */
+.stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px; transform: translate(-50%, -50%); transform-origin: center; }
+
+/* 一頁＝一張稿紙 */
+.slide { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 40px 80px 0 136px;
+  background: var(--paper); overflow: hidden; visibility: hidden; opacity: 0; transition: opacity .3s ease, visibility 0s .3s; }
+.slide.is-active { visibility: visible; opacity: 1; transition: opacity .3s ease; }
+.slide::before { content: ""; position: absolute; top: 0; bottom: 0; left: 108px; border-left: 2px solid var(--grid); }
+.page-no { position: absolute; left: 32px; top: 44px; width: 46px; height: 46px; border: 1.5px solid var(--green);
+  border-radius: 50%; display: grid; place-items: center; font: 20px/1 var(--kai); color: var(--green); }
+
+/* 標題：寫進一排稿紙格子，題目置中，英數兩字一格 */
+.title-row { flex: none; display: flex; justify-content: center; margin-bottom: 28px; --cell: 52px; }
+.cells { display: flex; border: 2px solid var(--grid-strong); }
+.cell { width: calc(var(--cell) * var(--span, 1)); height: var(--cell); display: grid; place-items: center;
+  border-right: 1.5px solid var(--grid); font: 400 calc(var(--cell) * .68)/1 var(--kai); color: var(--ink); }
+.cell:last-child { border-right: 0; }
+.cell.latin { font-size: calc(var(--cell) * .58); letter-spacing: .02em; }
+
+/* 內容在剩下的空間垂直置中；放不下時 auto margin 變 0，自動靠上，超出的部分照樣量得到 */
+.body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; font-size: 26px; line-height: 1.6; }
+.body > * { margin-block: auto; }
+.cites { flex: none; height: 62px; display: flex; flex-wrap: wrap; align-items: center; align-content: center;
+  gap: 2px 0; font-size: 16px; line-height: 1.4; color: var(--pencil); border-top: 1.5px dashed var(--grid); }
+.cites a { color: var(--green); text-decoration: none; border-bottom: 1px solid currentColor; }
+.cites a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.ref { color: var(--green); font-size: .6em; margin-left: 3px; vertical-align: .6em; line-height: 0; }
+.missing { font: 26px/1.6 var(--kai); color: var(--red); }
+
+/* concept：定義＋生活比喻（便利貼）＋要點 */
+.concept { display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 48px; align-items: center; }
+.definition { font-size: 32px; line-height: 1.55; margin: 0 0 20px; }
+.points { list-style: none; margin: 0; padding: 0; }
+.points li { position: relative; padding-left: 40px; margin: 0 0 12px; }
+.points li::before { content: ""; position: absolute; left: 3px; top: .42em; width: 17px; height: 17px; border: 2px solid var(--green); }
+.sticky { position: relative; background: var(--sticky); padding: 30px 28px 26px; transform: rotate(-1.6deg);
+  font: 25px/1.65 var(--kai); box-shadow: 2px 3px 0 rgba(34, 49, 74, .12); margin-top: 10px; }
+.sticky::before { content: ""; position: absolute; top: -12px; left: 50%; width: 96px; height: 26px;
+  transform: translateX(-50%) rotate(2deg); background: rgba(201, 223, 209, .8); }
+.sticky .lead { color: var(--pencil); }
+.has-figure .sticky { font-size: 22px; padding: 22px 26px 20px; margin-top: 22px; max-width: 560px; }
+.has-figure .definition { font-size: 28px; margin-bottom: 14px; }
+code { font: .84em/1 Consolas, "Cascadia Mono", "Huninn", "Microsoft JhengHei", monospace; background: rgba(201, 223, 209, .45);
+  padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+.figure svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* steps：有順序的步驟才用編號 */
+.steps { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 44px; margin-top: 8px; }
+.step { position: relative; }
+.step-no { width: 46px; height: 46px; border: 2px solid var(--green); border-radius: 50%; display: grid; place-items: center;
+  font: 400 24px/1 var(--kai); color: var(--green); margin-bottom: 12px; }
+.step h3 { font: 400 31px/1.3 var(--kai); margin: 0 0 8px; }
+.step p { margin: 0; font-size: 24px; line-height: 1.6; }
+.step:not(:last-child)::after { content: ""; position: absolute; top: 15px; right: -38px; width: 32px; height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'%3E%3Cpath d='M1 8.5c9-1 18 1 28-.5M22 2.5l7.5 5.6L22 14' fill='none' stroke='%233A7F5C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain; }
+.steps-wrap.has-figure { display: grid; grid-template-columns: minmax(0, 1fr) 356px; gap: 44px; }
+.has-figure .steps { grid-auto-flow: row; gap: 14px; }
+.has-figure .step { display: grid; grid-template-columns: 46px minmax(0, 1fr); column-gap: 16px; }
+.has-figure .step-no { grid-row: span 2; margin: 0; }
+.has-figure .step h3 { font-size: 27px; margin: 0; }
+.has-figure .step p { font-size: 22px; }
+.has-figure .step::after { display: none; }
+
+/* compare：翻開的筆記本左右兩頁 */
+.spread { position: relative; display: grid; grid-template-columns: 1fr 1fr; }
+.spread::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 8px; border-left: 2px dashed var(--grid); }
+.side { padding: 0 40px; }
+.side:first-child { padding-left: 0; }
+.side h3 { font: 400 36px/1.3 var(--kai); margin: 0 0 18px; padding-bottom: 8px; border-bottom: 2px solid var(--grid); }
+
+/* hook：數字寫成考卷上的紅筆分數 */
+.papers { display: flex; justify-content: center; gap: 44px; margin-top: 4px; }
+.exam { width: 272px; height: 292px; background: #fff; border: 1.5px solid var(--grid); padding: 20px 22px 16px;
+  display: flex; flex-direction: column; }
+.exam:nth-child(1) { transform: rotate(-2deg); }
+.exam:nth-child(2) { transform: rotate(1.2deg); }
+.exam:nth-child(3) { transform: rotate(-.8deg); }
+.exam .label { font-size: 21px; line-height: 1.45; padding-bottom: 10px; border-bottom: 1.5px solid var(--grid); min-height: 96px; }
+.score { position: relative; margin: auto; padding: 16px 24px; font: 400 64px/1 var(--kai); color: var(--red); white-space: nowrap; }
+.score svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.takeaway { text-align: center; font-size: 28px; margin: 30px 0 0; }
+
+/* quiz：選完才揭曉，紅筆圈出正解 */
+.question { font: 400 36px/1.5 var(--kai); margin: 0 0 24px; }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 28px; }
+.option { position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 20px; text-align: left;
+  font: 24px/1.45 var(--round); color: var(--ink); background: transparent; border: 1.5px solid var(--grid); border-radius: 12px; cursor: pointer; }
+.option:hover { border-color: var(--green); }
+.option:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.option .letter { flex: none; width: 40px; height: 40px; border: 1.5px solid var(--green); border-radius: 50%;
+  display: grid; place-items: center; font: 400 22px/1 var(--kai); color: var(--green); }
+.option .ring { position: absolute; left: -8px; top: -10px; width: calc(100% + 16px); height: calc(100% + 20px);
+  pointer-events: none; overflow: visible; opacity: 0; transition: opacity .35s ease; }
+.option .ring ellipse { fill: none; stroke: var(--red); stroke-width: 3; }
+.option.correct .ring { opacity: 1; }
+.option.wrong::after { content: "✗"; position: absolute; right: 16px; top: 50%; transform: translateY(-50%) rotate(-8deg);
+  font: 400 42px/1 var(--kai); color: var(--red); }
+.answered .option { cursor: default; }
+.explain { margin: 22px 0 0; font: 26px/1.6 var(--kai); color: var(--red); visibility: hidden; }
+.answered .explain { visibility: visible; }
+
+/* summary：本章重點，老師紅筆打勾 */
+.checklist { list-style: none; margin: 6px 0 0; padding: 0; }
+.checklist li { position: relative; padding-left: 54px; margin: 0 0 18px; font-size: 28px; }
+.checklist li::before { content: ""; position: absolute; left: 0; top: .2em; width: 30px; height: 30px; border: 2px solid var(--green); }
+.checklist li::after { content: ""; position: absolute; left: 9px; top: .05em; width: 11px; height: 22px;
+  border: solid var(--red); border-width: 0 4px 4px 0; transform: rotate(40deg); }
+
+/* cover：整頁是一張稿紙，行與行之間留一條空白 */
+.slide--cover { justify-content: center; align-items: center; padding: 0 80px 0 136px; }
+.sheet { display: flex; flex-direction: column; gap: 10px; --cell: 62px; }
+.sheet .cells { border-width: 1.5px; }
+.sheet .title .cell { font-size: calc(var(--cell) * .72); }
+.sheet .text .cell { font-size: calc(var(--cell) * .56); }
+.cover-meta { margin: 22px 0 0; font-size: 18px; color: var(--pencil); }
+
+/* 翻頁介面（在稿紙外面） */
+.controls { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; padding: 0 20px; font-size: 16px; }
+.hint { margin-right: auto; color: #4f4b44; }
+.controls button { font: 16px var(--round); color: var(--ink); background: var(--paper); border: 1.5px solid var(--ink);
+  border-radius: 8px; padding: 6px 14px; cursor: pointer; }
+.controls button:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.counter { min-width: 72px; text-align: center; }
+.progress { position: fixed; left: 0; bottom: 0; height: 4px; width: 0; background: var(--green); transition: width .3s; }
+.notes { position: fixed; left: 50%; bottom: 66px; transform: translateX(-50%); width: min(900px, 92vw); max-height: 40vh; overflow: auto;
+  display: none; padding: 16px 20px; background: var(--paper); border: 1.5px solid var(--ink); border-radius: 10px; font: 19px/1.7 var(--round); }
+body.show-notes .notes { display: block; }
+@media (max-width: 640px) { .hint { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.is-active, .progress, .option.correct .ring ellipse { transition: none; }
+}
+@media print {
+  @page { size: 1280px 720px; margin: 0; }
+  body { overflow: visible; background: none; }
+  .viewport { position: static; display: block; }
+  .stage { position: static; transform: none !important; width: auto; height: auto; }
+  .slide { position: relative; width: 1280px; height: 720px; visibility: visible; opacity: 1; break-after: page; }
+  .controls, .progress, .notes { display: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</svg>
+<main class="viewport">
+<div class="stage" id="stage">
+<section class="slide slide--cover" id="s01" aria-label="第 1 頁：AI 代理設計模式" data-notes="大家好，今天的主題是 AI 代理設計模式。簡單來說，就是讓人工智慧像人類一樣，將一件事拆成多個步驟去完成，提升效率與靈活度。接下來，我們會一步步了解這個概念的核心與應用。">
+  <h1 class="sheet" aria-label="AI 代理設計模式：讓 AI 像人一樣分步完成任務">
+    <span class="cells text" aria-hidden="true"><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span></span>
+    <span class="cells title" aria-hidden="true"><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell latin" style="--span:1">AI</span><span class="cell" style="--span:1">代</span><span class="cell" style="--span:1">理</span><span class="cell" style="--span:1">設</span><span class="cell" style="--span:1">計</span><span class="cell" style="--span:1">模</span><span class="cell" style="--span:1">式</span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span></span>
+    <span class="cells text" aria-hidden="true"><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span></span>
+    <span class="cells text" aria-hidden="true"><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1">讓</span><span class="cell latin" style="--span:1">AI</span><span class="cell" style="--span:1">像</span><span class="cell" style="--span:1">人</span><span class="cell" style="--span:1">一</span><span class="cell" style="--span:1">樣</span><span class="cell" style="--span:1">分</span><span class="cell" style="--span:1">步</span><span class="cell" style="--span:1">完</span><span class="cell" style="--span:1">成</span><span class="cell" style="--span:1">任</span><span class="cell" style="--span:1">務</span></span>
+    <span class="cells text" aria-hidden="true"><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span><span class="cell" style="--span:1"></span></span>
+  </h1>
+  <p class="cover-meta">依據本專案 LLM Wiki 的 7 篇資料，由 LangGraph pipeline 產生（20261113-024626）</p>
+</section>
+<section class="slide slide--hook" id="s02" aria-label="第 2 頁：同一題，誰的分數高？" data-notes="這張投影片要讓大家看到，同一題目在不同設定下的表現差距。先說 GPT-3.5 單次呼叫只拿到 48.1%，換成更大的 GPT-4 提升到 67.0%。再把 GPT-3.5 放進代理式工作流程，分多步驟改寫，分數跳到 95.1%。重點是流程改進的效益比單純換模型還大。提醒聽眾，這個 95.1% 是多篇研究的最佳值，並非同一實驗的直接比較。">
+  <span class="page-no" aria-hidden="true">2</span>
+  <div class="title-row"><h2 class="cells" aria-label="同一題，誰的分數高？"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">同</span><span class="cell" style="--span:1" aria-hidden="true">一</span><span class="cell" style="--span:1" aria-hidden="true">題</span><span class="cell" style="--span:1" aria-hidden="true">，</span><span class="cell" style="--span:1" aria-hidden="true">誰</span><span class="cell" style="--span:1" aria-hidden="true">的</span><span class="cell" style="--span:1" aria-hidden="true">分</span><span class="cell" style="--span:1" aria-hidden="true">數</span><span class="cell" style="--span:1" aria-hidden="true">高</span><span class="cell" style="--span:1" aria-hidden="true">？</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="papers">
+      <div class="exam"><div class="label">GPT-3.5 單次生成<sup class="ref">①</sup></div>
+        <div class="score">48.1%<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M86 12C70 2 22 2 9 18S10 56 50 57 98 40 90 16" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
+      </div>
+      <div class="exam"><div class="label">GPT-4 單次生成<sup class="ref">①</sup></div>
+        <div class="score">67.0%<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M86 12C70 2 22 2 9 18S10 56 50 57 98 40 90 16" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
+      </div>
+      <div class="exam"><div class="label">GPT-3.5 代理式流程<sup class="ref">①</sup></div>
+        <div class="score">95.1%<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M86 12C70 2 22 2 9 18S10 56 50 57 98 40 90 16" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
+      </div>
+    </div><p class="takeaway">改流程的提升，超過單純換模型的效益。<sup class="ref">①</sup></p>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/agentic-workflow.md" target="_blank" rel="noopener">①代理式工作流程（Agentic Workflow）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s03" aria-label="第 3 頁：代理式工作流程" data-notes="這張投影片說明什麼是代理式工作流程。先用一句話定義：不一次產出最終答案，而是分多步驟逐步改進。再用寫作文的比喻，讓大家感受「可以倒退、修正」的差別。接著列出三個重點：適合高品質、會反覆修改的任務；會增加成本與延遲，非必要時可省略；實驗顯示加入代理迴圈能大幅提升程式題正確率。講解時可舉例說明，讓非資工同學也能理解。">
+  <span class="page-no" aria-hidden="true">3</span>
+  <div class="title-row"><h2 class="cells" aria-label="代理式工作流程"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">代</span><span class="cell" style="--span:1" aria-hidden="true">理</span><span class="cell" style="--span:1" aria-hidden="true">式</span><span class="cell" style="--span:1" aria-hidden="true">工</span><span class="cell" style="--span:1" aria-hidden="true">作</span><span class="cell" style="--span:1" aria-hidden="true">流</span><span class="cell" style="--span:1" aria-hidden="true">程</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">代理式工作流程不要求 LLM 一次生成最終答案，而是安排多步驟、多次呼叫，逐步改好作品。<sup class="ref">①</sup></p><ul class="points"><li>適合需要高品質、會反覆修改的任務，如寫作、寫程式、做研究。<sup class="ref">①</sup></li><li>代理式系統會增加延遲與成本，若單次呼叫配合檢索已足夠，可不必使用。<sup class="ref">①</sup></li><li>在 HumanEval 程式題上，加入代理迴圈可把成功率提升至 95.1%。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>Zero‑shot像不准倒退的寫作文，代理式像先列大綱再修正。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/agentic-workflow.md" target="_blank" rel="noopener">①代理式工作流程（Agentic Workflow）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s04" aria-label="第 4 頁：四種招式一次看" data-notes="本頁說明四種常見的 AI 代理招式。前兩種（反思、工具使用）在實務上最穩定，後兩種（規劃、多代理）雖能提升彈性，但表現較難預測。把它想成寫作文的流程，先規劃大綱、查資料、寫草稿、再自我校正，最後請同學互相批改，就能對照每一招式的功能與挑戰。">
+  <span class="page-no" aria-hidden="true">4</span>
+  <div class="title-row"><h2 class="cells" aria-label="四種招式一次看"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">四</span><span class="cell" style="--span:1" aria-hidden="true">種</span><span class="cell" style="--span:1" aria-hidden="true">招</span><span class="cell" style="--span:1" aria-hidden="true">式</span><span class="cell" style="--span:1" aria-hidden="true">一</span><span class="cell" style="--span:1" aria-hidden="true">次</span><span class="cell" style="--span:1" aria-hidden="true">看</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept has-figure">
+      <div>
+        <p class="definition">Ng 2024 將 AI 代理分為反思、工具使用、規劃與多代理協作四種招式。<sup class="ref">①</sup></p><ul class="points"><li>反思 Reflection：自行檢查、修改，穩定度高。<sup class="ref">①</sup></li><li>工具使用 Tool Use：使用計算機、上網查，穩定度高。<sup class="ref">①</sup></li></ul><div class="sticky"><span class="lead">打個比方：</span>就像寫作文：先列大綱（規劃），查資料（工具使用），寫草稿再自我校正（反思），最後請同學互相批改（多代理協作）。<sup class="ref">②</sup></div>
+      </div><div class="figure">
+<svg viewBox="0 0 360 360" role="img" aria-label="四種模式地圖：反思、工具使用（穩定度高）、規劃、多代理協作（較難預測）">
+  <g fill="none" stroke="var(--green)" stroke-width="2" filter="url(#rough)">
+    <rect x="6" y="6" width="166" height="166" rx="14"/><rect x="188" y="6" width="166" height="166" rx="14"/>
+    <rect x="6" y="188" width="166" height="166" rx="14"/><rect x="188" y="188" width="166" height="166" rx="14"/>
+  </g>
+  <g fill="none" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)">
+    <path d="M110 48a26 26 0 1 1-12-14"/><path d="M98 25l1 10-10 2"/>
+    <rect x="251" y="26" width="40" height="54" rx="5"/><rect x="258" y="33" width="26" height="11"/>
+    <path d="M262 55h0M271 55h0M280 55h0M262 66h0M271 66h0M280 66h0" stroke-width="5"/>
+    <path d="M58 262c10-20 22-24 32-8s22 10 30-12" stroke-dasharray="5 6"/><path d="M120 242v-30l18 8-18 8"/>
+    <circle cx="252" cy="226" r="9"/><circle cx="271" cy="218" r="9"/><circle cx="290" cy="226" r="9"/>
+    <path d="M237 256c2-12 28-12 30 0M256 248c2-12 28-12 30 0M275 256c2-12 28-12 30 0"/>
+  </g>
+  <g text-anchor="middle" fill="var(--ink)">
+    <!-- 穩定度依 wiki/overview.md（Ng 2024 的實務經驗） -->
+    <text x="89" y="112" style="font:700 24px var(--kai)">反思</text><text x="89" y="136" style="font:14px var(--round)" fill="var(--pencil)">自己檢查、自己改</text><text x="89" y="158" style="font:13px var(--round)" fill="var(--green)">穩定度：高</text>
+    <text x="271" y="112" style="font:700 24px var(--kai)">工具使用</text><text x="271" y="136" style="font:14px var(--round)" fill="var(--pencil)">會按計算機、會上網查</text><text x="271" y="158" style="font:13px var(--round)" fill="var(--green)">穩定度：高</text>
+    <text x="89" y="294" style="font:700 24px var(--kai)">規劃</text><text x="89" y="318" style="font:14px var(--round)" fill="var(--pencil)">自己拆步驟、隨機應變</text><text x="89" y="340" style="font:13px var(--round)" fill="var(--red)">穩定度：較難預測</text>
+    <text x="271" y="294" style="font:700 24px var(--kai)">多代理協作</text><text x="271" y="318" style="font:14px var(--round)" fill="var(--pencil)">分角色合作、互相討論</text><text x="271" y="340" style="font:13px var(--round)" fill="var(--red)">穩定度：較難預測</text>
+  </g>
+</svg>
+</div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/overview.md" target="_blank" rel="noopener">①AI 代理設計模式總覽</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/agentic-workflow.md" target="_blank" rel="noopener">②代理式工作流程（Agentic Workflow）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s05" aria-label="第 5 頁：反思：自己改作文" data-notes="這張投影片說明什麼是「反思」：先讓模型產出，再讓同一個模型或另一個評估者給出具體回饋，最後依回饋重寫。Self‑Refine 的實驗顯示在多數任務上能提升約 20%，對話回應提升最明顯，但在數學推理上幾乎沒效果，提醒大家它不是全能解決方案。">
+  <span class="page-no" aria-hidden="true">5</span>
+  <div class="title-row"><h2 class="cells" aria-label="反思：自己改作文"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">反</span><span class="cell" style="--span:1" aria-hidden="true">思</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">自</span><span class="cell" style="--span:1" aria-hidden="true">己</span><span class="cell" style="--span:1" aria-hidden="true">改</span><span class="cell" style="--span:1" aria-hidden="true">作</span><span class="cell" style="--span:1" aria-hidden="true">文</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">讓 LLM 檢查自己剛產出的結果、提出具體改進建議，再依建議重寫（Ng 2024）。<sup class="ref">①</sup></p><ul class="points"><li>Self‑Refine 在 7 種任務上平均提升 20%，最高 40%（Madaan 2023）。<sup class="ref">②</sup></li><li>GPT‑4 對話偏好分數從 25.4% 提升至 74.6%（Madaan 2023）。<sup class="ref">②</sup></li><li>數學推理提升有限，僅從 92.9% 到 93.1%（Madaan 2023），非萬靈丹。<sup class="ref">②</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>寫完作文先自己訂正一次，或請同學幫忙挑毛病，再改出第二版。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/reflection.md" target="_blank" rel="noopener">①反思（Reflection）</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/self-refine.md" target="_blank" rel="noopener">②Self-Refine（自我回饋改寫）</a>
+  </footer>
+</section>
+<section class="slide slide--steps" id="s06" aria-label="第 6 頁：反思實作：心形圖貼文" data-notes="這張投影片示範如何用「反思」流程把一次 Python 心形圖的貼文寫得更好。先說明需求，讓模型產出初稿；再把初稿貼回模型，請它批評哪些地方值得保留、哪些要改、哪些還不確定；最後依批評結果重寫成第二版貼文。整個過程只用同一個模型的普通呼叫，適合課堂實作。">
+  <span class="page-no" aria-hidden="true">6</span>
+  <div class="title-row"><h2 class="cells" aria-label="反思實作：心形圖貼文"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">反</span><span class="cell" style="--span:1" aria-hidden="true">思</span><span class="cell" style="--span:1" aria-hidden="true">實</span><span class="cell" style="--span:1" aria-hidden="true">作</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">心</span><span class="cell" style="--span:1" aria-hidden="true">形</span><span class="cell" style="--span:1" aria-hidden="true">圖</span><span class="cell" style="--span:1" aria-hidden="true">貼</span><span class="cell" style="--span:1" aria-hidden="true">文</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="steps-wrap">
+      <ol class="steps" style="list-style:none;margin:0;padding:0">
+        <li class="step"><span class="step-no" aria-hidden="true">1</span><h3>需求</h3><p>說明要畫心形圖並寫成貼文，列出關鍵要素。<sup class="ref">①</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">2</span><h3>初稿</h3><p>請 LLM 產生程式碼與貼文草稿。<sup class="ref">②</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">3</span><h3>評論</h3><p>把產出貼回模型，請它從正確性、風格、效率等面向給建設性批評。<sup class="ref">②</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">4</span><h3>第二版</h3><p>依批評重寫程式碼與貼文，完成最終貼文。<sup class="ref">①</sup></p></li>
+      </ol>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/sources/tsai-2026-agent-notebooks.md" target="_blank" rel="noopener">①蔡炎龍〈Agent01 Reflection／Agent02 Tool Use／Agent03 Planning〉課程 notebook</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/reflection.md" target="_blank" rel="noopener">②反思（Reflection）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s07" aria-label="第 7 頁：工具使用：帶計算機" data-notes="講者說明：工具使用讓 LLM 不再只能靠內部知識產生文字，而是把實際運算交給外部程式。先以考試帶計算機的情境切入，說明什麼時候按下計算機、按什麼鍵，等同於模型決定何時呼叫工具、傳什麼參數。接著依照四步驟——介紹工具、提出請求、程式執行、結果回傳——逐一說明，並簡短舉課程實作例子（麥茶 20 杯、預算 800 元）。">
+  <span class="page-no" aria-hidden="true">7</span>
+  <div class="title-row"><h2 class="cells" aria-label="工具使用：帶計算機"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">工</span><span class="cell" style="--span:1" aria-hidden="true">具</span><span class="cell" style="--span:1" aria-hidden="true">使</span><span class="cell" style="--span:1" aria-hidden="true">用</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">帶</span><span class="cell" style="--span:1" aria-hidden="true">計</span><span class="cell" style="--span:1" aria-hidden="true">算</span><span class="cell" style="--span:1" aria-hidden="true">機</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">給大型語言模型（LLM）一組可「請求呼叫」的函式，讓模型只產生呼叫指令，真正的運算或動作由外部程式執行。<sup class="ref">①</sup></p><ul class="points"><li>在提示中先說明每個工具的功能與參數需求。<sup class="ref">①</sup></li><li>模型判斷需要工具時，輸出特定格式的呼叫請求。<sup class="ref">①</sup></li><li>外部程式執行工具，將結果回傳給模型繼續處理。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>就像考試允許帶計算機或字典，計算機負責算術，模型只決定什麼時候使用它，而不必自己心算。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/tool-use.md" target="_blank" rel="noopener">①工具使用（Tool Use）</a>
+  </footer>
+</section>
+<section class="slide slide--steps" id="s08" aria-label="第 8 頁：麥茶 20 杯夠不夠？" data-notes="這張投影片示範課堂上「麥茶 20 杯，預算 800 元」的工具使用流程。先說明我們給模型的函式（quote_order），接著模型會把需求轉成 JSON 請求，程式收到後執行計算，最後把結果回傳讓模型完成回答。過程分成四個步驟，讓大家看見 LLM 不是直接算出答案，而是透過呼叫外部程式完成任務。">
+  <span class="page-no" aria-hidden="true">8</span>
+  <div class="title-row"><h2 class="cells" aria-label="麥茶20杯夠不夠？"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">麥</span><span class="cell" style="--span:1" aria-hidden="true">茶</span><span class="cell latin" style="--span:1" aria-hidden="true">20</span><span class="cell" style="--span:1" aria-hidden="true">杯</span><span class="cell" style="--span:1" aria-hidden="true">夠</span><span class="cell" style="--span:1" aria-hidden="true">不</span><span class="cell" style="--span:1" aria-hidden="true">夠</span><span class="cell" style="--span:1" aria-hidden="true">？</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="steps-wrap">
+      <ol class="steps" style="list-style:none;margin:0;padding:0">
+        <li class="step"><span class="step-no" aria-hidden="true">1</span><h3>介紹工具</h3><p>在提示中說明 <code>quote_order</code> 函式功能與參數（商品、數量）<sup class="ref">①</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">2</span><h3>提出請求</h3><p>模型輸出 JSON 請求 <code>{tool:quote_order, item:麥茶, qty:20}</code><sup class="ref">①</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">3</span><h3>程式執行</h3><p>外部 Python 讀取請求，計算總價 600 元<sup class="ref">②</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">4</span><h3>結果回傳</h3><p>把計算結果 600 元送回模型，模型回覆「夠，還剩 200 元」<sup class="ref">②</sup></p></li>
+      </ol>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/tool-use.md" target="_blank" rel="noopener">①工具使用（Tool Use）</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/sources/tsai-2026-agent-notebooks.md" target="_blank" rel="noopener">②蔡炎龍〈Agent01 Reflection／Agent02 Tool Use／Agent03 Planning〉課程 notebook</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s09" aria-label="第 9 頁：規劃：出國排行程" data-notes="本頁說明規劃的兩種意義：一是 LLM 自己決定步驟，二是先寫可編輯的計畫再照著做。用出國排程的生活比喻，讓大家感受「先決定行程、現場調整」的概念。重點在於目標→拆任務→寫計畫→執行→回饋與檢查點，這樣才能安全、有效地完成大任務。">
+  <span class="page-no" aria-hidden="true">9</span>
+  <div class="title-row"><h2 class="cells" aria-label="規劃：出國排行程"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">規</span><span class="cell" style="--span:1" aria-hidden="true">劃</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">出</span><span class="cell" style="--span:1" aria-hidden="true">國</span><span class="cell" style="--span:1" aria-hidden="true">排</span><span class="cell" style="--span:1" aria-hidden="true">行</span><span class="cell" style="--span:1" aria-hidden="true">程</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">規劃是讓 LLM 自己決定要依序執行哪些步驟，將大任務拆成小任務完成（Ng 2024）。<sup class="ref">①</sup></p><ul class="points"><li>LLM 先收到一個大目標，再把它拆成可執行的子任務（Ng 2024）。<sup class="ref">①</sup></li><li>拆任務後，LLM 寫結構化計畫，列出每步工具與輸入輸出（Ng 2024）。<sup class="ref">①</sup></li><li>執行遇問題時，代理即時改路，關鍵點停下請人確認防失控（Anthropic 2024）。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>就像出國前排好行程：先決定景點與順序，現場若關閉再即時調整。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/planning.md" target="_blank" rel="noopener">①規劃（Planning）</a>
+  </footer>
+</section>
+<section class="slide slide--steps" id="s10" aria-label="第 10 頁：ReAct：想→做→看" data-notes="這張投影片用「煮菜」和「出門帶傘」的生活例子，說明 ReAct 的三個核心環節：先在腦中產生想法（思考下一步要做什麼），接著執行動作（讓模型去搜尋或執行指令），最後觀察環境回應（讀取搜尋結果或執行結果），再重複這個迴圈直到得到最終答案。">
+  <span class="page-no" aria-hidden="true">10</span>
+  <div class="title-row"><h2 class="cells" aria-label="ReAct：想→做→看"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell latin" style="--span:3" aria-hidden="true">ReAct</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">想</span><span class="cell" style="--span:1" aria-hidden="true">→</span><span class="cell" style="--span:1" aria-hidden="true">做</span><span class="cell" style="--span:1" aria-hidden="true">→</span><span class="cell" style="--span:1" aria-hidden="true">看</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="steps-wrap has-figure">
+      <ol class="steps" style="list-style:none;margin:0;padding:0">
+        <li class="step"><span class="step-no" aria-hidden="true">1</span><h3>想法</h3><p>模型文字推理下一步，如拆解目標或處理例外，只在上下文思考。<sup class="ref">①</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">2</span><h3>動作</h3><p>模型執行任務，如 search、lookup 或 finish，取得資訊。<sup class="ref">①</sup></p></li>
+        <li class="step"><span class="step-no" aria-hidden="true">3</span><h3>觀察</h3><p>讀回環境回應，如 Wikipedia 前5句或天氣預報，供下輪想法。<sup class="ref">①</sup></p></li>
+      </ol><div class="figure">
+<svg viewBox="0 0 360 360" role="img" aria-label="想法、動作、觀察三個步驟反覆循環，直到完成">
+  <defs><marker id="arrow-loop" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round"/></marker></defs>
+  <g fill="none" stroke="var(--green)" stroke-width="2.2" filter="url(#rough)">
+    <circle cx="180" cy="62" r="48"/><circle cx="296" cy="266" r="48"/><circle cx="64" cy="266" r="48"/>
+  </g>
+  <g fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" marker-end="url(#arrow-loop)">
+    <path d="M226 78q56 30 70 136"/><path d="M248 286q-68 40-136 0"/><path d="M64 216q-2-96 70-140"/>
+  </g>
+  <g text-anchor="middle" dominant-baseline="central" style="font:700 26px var(--kai)" fill="var(--ink)">
+    <text x="180" y="62">想法</text><text x="296" y="266">動作</text><text x="64" y="266">觀察</text>
+  </g>
+  <text x="180" y="186" text-anchor="middle" style="font:17px var(--round)" fill="var(--pencil)">一輪一輪重複，</text>
+  <text x="180" y="210" text-anchor="middle" style="font:17px var(--round)" fill="var(--pencil)">直到完成</text>
+</svg>
+</div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/react.md" target="_blank" rel="noopener">①ReAct（推理＋行動）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s11" aria-label="第 11 頁：多代理：分組報告" data-notes="在這張投影片，我會先說明什麼是多代理協作，然後用分組報告的生活例子讓大家感受角色分工的好處。接著提到實驗結果：多代理比單一代理提升 90.2% 的表現，但代價是 token 用量約 15 倍。最後簡要說明五個運作步驟，讓同學了解實作流程。">
+  <span class="page-no" aria-hidden="true">11</span>
+  <div class="title-row"><h2 class="cells" aria-label="多代理：分組報告"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">多</span><span class="cell" style="--span:1" aria-hidden="true">代</span><span class="cell" style="--span:1" aria-hidden="true">理</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">分</span><span class="cell" style="--span:1" aria-hidden="true">組</span><span class="cell" style="--span:1" aria-hidden="true">報</span><span class="cell" style="--span:1" aria-hidden="true">告</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">多個「代理」分工合作、互相討論，產出比單一代理更佳結果，通常以不同提示讓同一或多個 LLM 扮演不同角色。<sup class="ref">①</sup></p><ul class="points"><li>研究顯示，多代理系統在內部評測中比單一代理好 90.2%。<sup class="ref">①</sup></li><li>為達成更好效果，token 用量約是單代理的 15 倍。<sup class="ref">①</sup></li><li>運作步驟包括拆角色、寫提示、各自執行、互相溝通、避免傳話遊戲。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>就像分組報告：有人查資料、有人做投影片、有人檢查，最後由組長整合成完整報告。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/multi-agent-collaboration.md" target="_blank" rel="noopener">①多代理協作（Multi-agent Collaboration）</a>
+  </footer>
+</section>
+<section class="slide slide--compare" id="s12" aria-label="第 12 頁：跟團 vs. 自由行" data-notes="這張比較圖把工作流程比喻成跟團旅行，行程事先排好，結果穩定；而代理則像自由行，路線由模型即時決定，彈性高但成本與風險較大。說明何時適合選擇工作流程，何時需要代理，並給出兩個簡短例子，幫助同學快速掌握概念。">
+  <span class="page-no" aria-hidden="true">12</span>
+  <div class="title-row"><h2 class="cells" aria-label="跟團vs.自由行"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">跟</span><span class="cell" style="--span:1" aria-hidden="true">團</span><span class="cell latin" style="--span:2" aria-hidden="true">vs.</span><span class="cell" style="--span:1" aria-hidden="true">自</span><span class="cell" style="--span:1" aria-hidden="true">由</span><span class="cell" style="--span:1" aria-hidden="true">行</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="spread">
+      <div class="side"><h3>工作流程</h3><ul class="points"><li>路線由旅行社排好，穩定、可預期<sup class="ref">①</sup></li><li>適合任務能事先拆成固定步驟的情況<sup class="ref">①</sup></li><li>例：先寫大綱 → 程式檢查 → 依大綱寫全文<sup class="ref">①</sup></li></ul></div>
+      <div class="side"><h3>代理</h3><ul class="points"><li>邊走邊決定下一站，彈性大但可能迷路、花費較高<sup class="ref">①</sup></li><li>適合步驟無法事先寫死，需要模型自行決策<sup class="ref">①</sup></li><li>例：SWE‑bench 代理自行決定要改哪些檔案<sup class="ref">①</sup></li></ul></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/workflow-vs-agent.md" target="_blank" rel="noopener">①工作流程 vs. 代理（Workflow vs. Agent）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s13" aria-label="第 13 頁：能簡單就簡單" data-notes="設計時先看能否用一次 LLM 呼叫加檢索或範例解決問題；只有當任務需要動態決策、步驟無法預先寫死時，才考慮代理式方案，這樣可控制成本，同時在需要時提升效能。">
+  <span class="page-no" aria-hidden="true">13</span>
+  <div class="title-row"><h2 class="cells" aria-label="能簡單就簡單"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">能</span><span class="cell" style="--span:1" aria-hidden="true">簡</span><span class="cell" style="--span:1" aria-hidden="true">單</span><span class="cell" style="--span:1" aria-hidden="true">就</span><span class="cell" style="--span:1" aria-hidden="true">簡</span><span class="cell" style="--span:1" aria-hidden="true">單</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept has-figure">
+      <div>
+        <p class="definition">工作流程讓 LLM 按事先寫好的程式路徑執行；代理讓 LLM 自己決定下一步與使用的工具。<sup class="ref">①</sup></p><ul class="points"><li>先試最簡單：單次 LLM 呼叫配檢索與範例，往往已足夠。<sup class="ref">①</sup></li><li>若步驟可事先寫死，選工作流程以獲得穩定結果；若無法寫死，改用代理取得彈性。<sup class="ref">①</sup></li></ul><div class="sticky"><span class="lead">打個比方：</span>工作流程像跟團旅行，行程固定可預期；代理像自由行，邊走邊決定下一站，彈性大但可能迷路。<sup class="ref">①</sup></div>
+      </div><div class="figure">
+<svg viewBox="0 0 360 360" role="img" aria-label="複雜度階梯：單次呼叫、增強型 LLM、工作流程、代理，先從最下面開始">
+  <path d="M8 316H96V244H184V172H272V100H352" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" filter="url(#rough)"/>
+  <g text-anchor="middle" style="font:18px var(--round)" fill="var(--ink)">
+    <text x="52" y="304">單次呼叫</text><text x="140" y="232">增強型 LLM</text><text x="228" y="160">工作流程</text><text x="312" y="88">代理</text>
+  </g>
+  <text x="8" y="30" style="font:15px var(--round)" fill="var(--pencil)">越往上：越複雜、越花錢，</text>
+  <text x="8" y="52" style="font:15px var(--round)" fill="var(--pencil)">也越難預測</text>
+  <path d="M60 352c-10-8-12-16-8-26M45 334l7-8 6 9" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" filter="url(#rough)"/>
+  <text x="74" y="352" style="font:700 21px var(--kai)" fill="var(--red)">先從這裡開始！</text>
+</svg>
+</div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/workflow-vs-agent.md" target="_blank" rel="noopener">①工作流程 vs. 代理（Workflow vs. Agent）</a>
+  </footer>
+</section>
+<section class="slide slide--quiz" id="s14" aria-label="第 14 頁：小測驗：誰在執行？" data-notes="說明 LLM 只會產生呼叫指令，真正跑程式的是外部程式。舉例課程中 LLM 產生 JSON 請求，Python 程式算出結果再回傳。">
+  <span class="page-no" aria-hidden="true">14</span>
+  <div class="title-row"><h2 class="cells" aria-label="小測驗：誰在執行？"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">小</span><span class="cell" style="--span:1" aria-hidden="true">測</span><span class="cell" style="--span:1" aria-hidden="true">驗</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">誰</span><span class="cell" style="--span:1" aria-hidden="true">在</span><span class="cell" style="--span:1" aria-hidden="true">執</span><span class="cell" style="--span:1" aria-hidden="true">行</span><span class="cell" style="--span:1" aria-hidden="true">？</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="quiz" data-answer="2">
+      <p class="question">在工具使用流程中，真正執行程式碼的是誰？</p>
+      <div class="options">
+        <button type="button" class="option"><span class="letter" aria-hidden="true">A</span><span>LLM 本身直接執行</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+        <button type="button" class="option"><span class="letter" aria-hidden="true">B</span><span>使用者手動點擊執行</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+        <button type="button" class="option"><span class="letter" aria-hidden="true">C</span><span>外部程式根據請求執行</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+      </div>
+      <p class="explain" aria-live="polite">解析：外部程式偵測到 LLM 的 tool request，才會真正呼叫對應函式執行。<sup class="ref">①</sup></p>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/tool-use.md" target="_blank" rel="noopener">①工具使用（Tool Use）</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s15" aria-label="第 15 頁：代理也會出包" data-notes="各位同學，代理把聊天模型嵌入自動化流程，會放大模型的限制。資料太多會超出上下文，導致成本上升；自評時模型看不出專業錯誤；還可能陷入重複的迴圈。設計時要特別留意這些風險。">
+  <span class="page-no" aria-hidden="true">15</span>
+  <div class="title-row"><h2 class="cells" aria-label="代理也會出包"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">代</span><span class="cell" style="--span:1" aria-hidden="true">理</span><span class="cell" style="--span:1" aria-hidden="true">也</span><span class="cell" style="--span:1" aria-hidden="true">會</span><span class="cell" style="--span:1" aria-hidden="true">出</span><span class="cell" style="--span:1" aria-hidden="true">包</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">代理把 LLM 放入多步驟、可行動系統，放大其上下文有限、長程規劃不穩、格式不可靠等弱點。<sup class="ref">①</sup></p><ul class="points"><li>上下文塞不下且成本高：大量歷史或 API 回傳超出字數上限，錯誤累積會增加 API 費用。<sup class="ref">①</sup></li><li>自評盲點：在專業領域 LLM 無法辨識自己的錯誤，評估結果可能不可靠。<sup class="ref">①</sup></li><li>卡在迴圈：代理可能重複產生相同想法或動作，難以跳脫，常見於 ReAct 框架。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>就像一位能幹的實習生：資料放不下、計畫被打亂會慌、報告格式偶爾錯，需主管把關。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/agent-limitations.md" target="_blank" rel="noopener">①代理的限制與風險</a>
+  </footer>
+</section>
+<section class="slide slide--concept" id="s16" aria-label="第 16 頁：AI 做事，人來把關" data-notes="這張投影片說明，AI 做事時，我們在關鍵環節插入人類檢查。先讓流程透明、設檢查點、允許即時修改，最後再由人決定採不採用，確保錯誤早發現、品質更可靠。">
+  <span class="page-no" aria-hidden="true">16</span>
+  <div class="title-row"><h2 class="cells" aria-label="AI做事，人來把關"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell latin" style="--span:1" aria-hidden="true">AI</span><span class="cell" style="--span:1" aria-hidden="true">做</span><span class="cell" style="--span:1" aria-hidden="true">事</span><span class="cell" style="--span:1" aria-hidden="true">，</span><span class="cell" style="--span:1" aria-hidden="true">人</span><span class="cell" style="--span:1" aria-hidden="true">來</span><span class="cell" style="--span:1" aria-hidden="true">把</span><span class="cell" style="--span:1" aria-hidden="true">關</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="concept">
+      <div>
+        <p class="definition">在代理或工作流程的關鍵位置安排人來檢查、修改或決定，讓錯誤能及早被發現和修正，而不是只看最後的成品。<sup class="ref">①</sup></p><ul class="points"><li>把代理的規劃步驟、想法或中間成果攤開，讓過程可見。<sup class="ref">①</sup></li><li>在關鍵檢查點暫停，請人回饋並可直接修改中間成果。<sup class="ref">①</sup></li><li>最終由人決定是否採用結果，並做人工測試找出自動評估漏掉的問題。<sup class="ref">①</sup></li></ul>
+      </div><div class="sticky"><span class="lead">打個比方：</span>就像實習生寫報告，主管先在大綱階段看一次方向，最後定稿前再檢查一次，避免整份報告跑錯方向。<sup class="ref">①</sup></div>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/human-in-the-loop.md" target="_blank" rel="noopener">①人在迴圈中（Human-in-the-loop）</a>
+  </footer>
+</section>
+<section class="slide slide--quiz" id="s17" aria-label="第 17 頁：小測驗：該用代理嗎？" data-notes="講者說明：先提醒同學工作流程是「跟團旅行」的概念，步驟固定、結果可預期；代理則像自由行，需要模型自行決策。題目聚焦在「什麼情況只需要工作流程」的判斷，答案是第一項。解釋時再次強調工作流程的適用條件，並簡要提到代理的限制，如上下文不足、長程規劃不穩等。">
+  <span class="page-no" aria-hidden="true">17</span>
+  <div class="title-row"><h2 class="cells" aria-label="小測驗：該用代理嗎？"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">小</span><span class="cell" style="--span:1" aria-hidden="true">測</span><span class="cell" style="--span:1" aria-hidden="true">驗</span><span class="cell" style="--span:1" aria-hidden="true">：</span><span class="cell" style="--span:1" aria-hidden="true">該</span><span class="cell" style="--span:1" aria-hidden="true">用</span><span class="cell" style="--span:1" aria-hidden="true">代</span><span class="cell" style="--span:1" aria-hidden="true">理</span><span class="cell" style="--span:1" aria-hidden="true">嗎</span><span class="cell" style="--span:1" aria-hidden="true">？</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <div class="quiz" data-answer="0">
+      <p class="question">以下哪種情況最適合使用工作流程而不是代理？</p>
+      <div class="options">
+        <button type="button" class="option"><span class="letter" aria-hidden="true">A</span><span>任務步驟可以事先寫死，且需要穩定一致的結果</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+        <button type="button" class="option"><span class="letter" aria-hidden="true">B</span><span>任務需要模型自行決定下一步並動態選擇工具</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+        <button type="button" class="option"><span class="letter" aria-hidden="true">C</span><span>任務涉及長程規劃且上下文資訊超過模型限制</span><svg class="ring" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="20" rx="48" ry="18" vector-effect="non-scaling-stroke"/></svg></button>
+      </div>
+      <p class="explain" aria-live="polite">解析：工作流程適合步驟可預先定義、需求穩定且可預測的情境；若任務無法事先寫死或需彈性決策，才考慮使用代理。<sup class="ref">①②</sup></p>
+    </div>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/workflow-vs-agent.md" target="_blank" rel="noopener">①工作流程 vs. 代理（Workflow vs. Agent）</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/agent-limitations.md" target="_blank" rel="noopener">②代理的限制與風險</a>
+  </footer>
+</section>
+<section class="slide slide--summary" id="s18" aria-label="第 18 頁：本章重點" data-notes="這張投影片快速回顧本章核心概念：AI 代理其實是把同一個模型拆成多步工作，依需求從最簡單的單次呼叫開始，逐步加上工作流程或代理的彈性；四種主要招式（反思、工具使用、規劃、多代理）提供不同穩定度；最後，透過 Human‑in‑the‑loop 把關，讓人類在關鍵環節檢查、修正，確保結果可靠。">
+  <span class="page-no" aria-hidden="true">18</span>
+  <div class="title-row"><h2 class="cells" aria-label="本章重點"><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true">本</span><span class="cell" style="--span:1" aria-hidden="true">章</span><span class="cell" style="--span:1" aria-hidden="true">重</span><span class="cell" style="--span:1" aria-hidden="true">點</span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span><span class="cell" style="--span:1" aria-hidden="true"></span></h2></div>
+  <div class="body">
+    <ul class="checklist"><li>AI 代理是讓模型分多步工作，簡單就簡單（單次 LLM 呼叫）<sup class="ref">①</sup></li><li>四種模式：反思、工具使用、規劃、多代理，穩定度由高到較難預測<sup class="ref">①</sup></li><li>工作流程 vs. 代理：前者固定路徑像跟團，後者自行決策像自由行<sup class="ref">②</sup></li><li>Human‑in‑the‑loop：在關鍵步驟加入人工檢查與修正<sup class="ref">③</sup></li><li>只在證明有效時才提升複雜度，保持系統可控與成本效益<sup class="ref">①</sup></li></ul>
+  </div>
+  <footer class="cites">本頁依據 Wiki：<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/overview.md" target="_blank" rel="noopener">①AI 代理設計模式總覽</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/workflow-vs-agent.md" target="_blank" rel="noopener">②工作流程 vs. 代理（Workflow vs. Agent）</a>、<a href="https://github.com/ChangDustin/AI-agent-design-patterns-WIKI/blob/main/wiki/concepts/human-in-the-loop.md" target="_blank" rel="noopener">③人在迴圈中（Human-in-the-loop）</a>
+  </footer>
+</section>
+</div>
+</main>
+<div class="notes" id="notes" role="region" aria-label="講者備註" aria-live="polite"></div>
+<nav class="controls" aria-label="翻頁">
+  <span class="hint">用方向鍵翻頁，按 N 看講者備註</span>
+  <button type="button" id="prev">上一頁</button>
+  <span class="counter" id="counter" aria-live="polite"></span>
+  <button type="button" id="next">下一頁</button>
+  <button type="button" id="toggle-notes" aria-controls="notes" aria-expanded="false">講者備註</button>
+</nav>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const slides = [...document.querySelectorAll('.slide')];
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  const notes = document.getElementById('notes');
+  const notesButton = document.getElementById('toggle-notes');
+  let current = 0;
+
+  function fit() {
+    const scale = Math.min(window.innerWidth / 1280, (window.innerHeight - 56) / 720);
+    stage.style.transform = `translate(-50%, -50%) scale(${scale})`;
+  }
+  function go(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, k) => {
+      s.classList.toggle('is-active', k === current);
+      s.toggleAttribute('inert', k !== current);
+    });
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    progress.style.width = `${(current + 1) / slides.length * 100}%`;
+    notes.textContent = slides[current].dataset.notes || '這頁沒有講者備註。';
+    history.replaceState(null, '', `#${current + 1}`);
+  }
+  function toggleNotes() {
+    const open = document.body.classList.toggle('show-notes');
+    notesButton.setAttribute('aria-expanded', String(open));
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  notesButton.addEventListener('click', toggleNotes);
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(current - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+    else if (e.key === 'n' || e.key === 'N') toggleNotes();
+    else if (/^[1-4]$/.test(e.key)) {
+      const option = slides[current].querySelectorAll('.option')[Number(e.key) - 1];
+      if (option) option.click();
+    }
+  });
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) go(current + (dx < 0 ? 1 : -1));
+    touchX = null;
+  });
+  document.querySelectorAll('.quiz').forEach((quiz) => {
+    const answer = Number(quiz.dataset.answer);
+    const options = [...quiz.querySelectorAll('.option')];
+    options.forEach((button, k) => button.addEventListener('click', () => {
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      if (k !== answer) button.classList.add('wrong');
+      if (options[answer]) options[answer].classList.add('correct');
+      options.forEach((o) => o.setAttribute('aria-disabled', 'true'));
+    }));
+  });
+  window.addEventListener('resize', fit);
+  window.deck = { go, count: slides.length };
+  fit();
+  go((parseInt(location.hash.slice(1), 10) || 1) - 1);
+})();
+</script>
+</body>
+</html>

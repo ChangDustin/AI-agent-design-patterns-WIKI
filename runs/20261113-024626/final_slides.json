@@ -1,0 +1,740 @@
+{
+  "run_id": "20261113-024626",
+  "slides": [
+    {
+      "id": "s01",
+      "type": "cover",
+      "title": "AI 代理設計模式",
+      "goal": "點出主題：讓 AI 像人一樣分多步把事情做好",
+      "pages": [],
+      "visual": "none",
+      "content": {
+        "subtitle": "讓 AI 像人一樣分步完成任務",
+        "notes": "大家好，今天的主題是 AI 代理設計模式。簡單來說，就是讓人工智慧像人類一樣，將一件事拆成多個步驟去完成，提升效率與靈活度。接下來，我們會一步步了解這個概念的核心與應用。"
+      }
+    },
+    {
+      "id": "s02",
+      "type": "hook",
+      "title": "同一題，誰的分數高？",
+      "goal": "用 HumanEval 分數 48.1%、67.0%、95.1% 說明改流程比換更強的模型更有效",
+      "pages": [
+        "concepts/agentic-workflow.md"
+      ],
+      "visual": "none",
+      "content": {
+        "notes": "這張投影片要讓大家看到，同一題目在不同設定下的表現差距。先說 GPT-3.5 單次呼叫只拿到 48.1%，換成更大的 GPT-4 提升到 67.0%。再把 GPT-3.5 放進代理式工作流程，分多步驟改寫，分數跳到 95.1%。重點是流程改進的效益比單純換模型還大。提醒聽眾，這個 95.1% 是多篇研究的最佳值，並非同一實驗的直接比較。",
+        "stats": [
+          {
+            "value": "48.1%",
+            "label": "GPT-3.5 單次生成",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          },
+          {
+            "value": "67.0%",
+            "label": "GPT-4 單次生成",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          },
+          {
+            "value": "95.1%",
+            "label": "GPT-3.5 代理式流程",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          }
+        ],
+        "takeaway": {
+          "text": "改流程的提升，超過單純換模型的效益。",
+          "cite": [
+            "concepts/agentic-workflow.md"
+          ]
+        }
+      }
+    },
+    {
+      "id": "s03",
+      "type": "concept",
+      "title": "代理式工作流程",
+      "goal": "不要一次寫完，而是像人寫作文一樣分多步修改（寫作文不准按倒退鍵的比喻）",
+      "pages": [
+        "concepts/agentic-workflow.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "代理式工作流程不要求 LLM 一次生成最終答案，而是安排多步驟、多次呼叫，逐步改好作品。",
+          "cite": [
+            "concepts/agentic-workflow.md"
+          ]
+        },
+        "analogy": {
+          "text": "Zero‑shot像不准倒退的寫作文，代理式像先列大綱再修正。",
+          "cite": [
+            "concepts/agentic-workflow.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "適合需要高品質、會反覆修改的任務，如寫作、寫程式、做研究。",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          },
+          {
+            "text": "代理式系統會增加延遲與成本，若單次呼叫配合檢索已足夠，可不必使用。",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          },
+          {
+            "text": "在 HumanEval 程式題上，加入代理迴圈可把成功率提升至 95.1%。",
+            "cite": [
+              "concepts/agentic-workflow.md"
+            ]
+          }
+        ],
+        "notes": "這張投影片說明什麼是代理式工作流程。先用一句話定義：不一次產出最終答案，而是分多步驟逐步改進。再用寫作文的比喻，讓大家感受「可以倒退、修正」的差別。接著列出三個重點：適合高品質、會反覆修改的任務；會增加成本與延遲，非必要時可省略；實驗顯示加入代理迴圈能大幅提升程式題正確率。講解時可舉例說明，讓非資工同學也能理解。"
+      }
+    },
+    {
+      "id": "s04",
+      "type": "concept",
+      "title": "四種招式一次看",
+      "goal": "介紹反思、工具使用、規劃、多代理協作四種模式，以及哪些比較穩定",
+      "pages": [
+        "overview.md",
+        "concepts/agentic-workflow.md"
+      ],
+      "visual": "patterns",
+      "content": {
+        "definition": {
+          "text": "Ng 2024 將 AI 代理分為反思、工具使用、規劃與多代理協作四種招式。",
+          "cite": [
+            "overview.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像寫作文：先列大綱（規劃），查資料（工具使用），寫草稿再自我校正（反思），最後請同學互相批改（多代理協作）。",
+          "cite": [
+            "concepts/agentic-workflow.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "反思 Reflection：自行檢查、修改，穩定度高。",
+            "cite": [
+              "overview.md"
+            ]
+          },
+          {
+            "text": "工具使用 Tool Use：使用計算機、上網查，穩定度高。",
+            "cite": [
+              "overview.md"
+            ]
+          }
+        ],
+        "notes": "本頁說明四種常見的 AI 代理招式。前兩種（反思、工具使用）在實務上最穩定，後兩種（規劃、多代理）雖能提升彈性，但表現較難預測。把它想成寫作文的流程，先規劃大綱、查資料、寫草稿、再自我校正，最後請同學互相批改，就能對照每一招式的功能與挑戰。"
+      }
+    },
+    {
+      "id": "s05",
+      "type": "concept",
+      "title": "反思：自己改作文",
+      "goal": "LLM 檢查自己的產出再重寫；用 Self-Refine 的數據說明它有效，但不是萬靈丹",
+      "pages": [
+        "concepts/reflection.md",
+        "concepts/self-refine.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "讓 LLM 檢查自己剛產出的結果、提出具體改進建議，再依建議重寫（Ng 2024）。",
+          "cite": [
+            "concepts/reflection.md"
+          ]
+        },
+        "analogy": {
+          "text": "寫完作文先自己訂正一次，或請同學幫忙挑毛病，再改出第二版。",
+          "cite": [
+            "concepts/reflection.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "Self‑Refine 在 7 種任務上平均提升 20%，最高 40%（Madaan 2023）。",
+            "cite": [
+              "concepts/self-refine.md"
+            ]
+          },
+          {
+            "text": "GPT‑4 對話偏好分數從 25.4% 提升至 74.6%（Madaan 2023）。",
+            "cite": [
+              "concepts/self-refine.md"
+            ]
+          },
+          {
+            "text": "數學推理提升有限，僅從 92.9% 到 93.1%（Madaan 2023），非萬靈丹。",
+            "cite": [
+              "concepts/self-refine.md"
+            ]
+          }
+        ],
+        "notes": "這張投影片說明什麼是「反思」：先讓模型產出，再讓同一個模型或另一個評估者給出具體回饋，最後依回饋重寫。Self‑Refine 的實驗顯示在多數任務上能提升約 20%，對話回應提升最明顯，但在數學推理上幾乎沒效果，提醒大家它不是全能解決方案。"
+      }
+    },
+    {
+      "id": "s06",
+      "type": "steps",
+      "title": "反思實作：心形圖貼文",
+      "goal": "用課程的 Python 心形圖貼文示範：需求 → 初稿 → 評論 → 第二版",
+      "pages": [
+        "concepts/reflection.md",
+        "sources/tsai-2026-agent-notebooks.md"
+      ],
+      "visual": "none",
+      "content": {
+        "notes": "這張投影片示範如何用「反思」流程把一次 Python 心形圖的貼文寫得更好。先說明需求，讓模型產出初稿；再把初稿貼回模型，請它批評哪些地方值得保留、哪些要改、哪些還不確定；最後依批評結果重寫成第二版貼文。整個過程只用同一個模型的普通呼叫，適合課堂實作。",
+        "steps": [
+          {
+            "label": "需求",
+            "text": "說明要畫心形圖並寫成貼文，列出關鍵要素。",
+            "cite": [
+              "sources/tsai-2026-agent-notebooks.md"
+            ]
+          },
+          {
+            "label": "初稿",
+            "text": "請 LLM 產生程式碼與貼文草稿。",
+            "cite": [
+              "concepts/reflection.md"
+            ]
+          },
+          {
+            "label": "評論",
+            "text": "把產出貼回模型，請它從正確性、風格、效率等面向給建設性批評。",
+            "cite": [
+              "concepts/reflection.md"
+            ]
+          },
+          {
+            "label": "第二版",
+            "text": "依批評重寫程式碼與貼文，完成最終貼文。",
+            "cite": [
+              "sources/tsai-2026-agent-notebooks.md"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "s07",
+      "type": "concept",
+      "title": "工具使用：帶計算機",
+      "goal": "模型只寫出呼叫請求，真正執行的是外部程式；用考試帶計算機的比喻",
+      "pages": [
+        "concepts/tool-use.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "給大型語言模型（LLM）一組可「請求呼叫」的函式，讓模型只產生呼叫指令，真正的運算或動作由外部程式執行。",
+          "cite": [
+            "concepts/tool-use.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像考試允許帶計算機或字典，計算機負責算術，模型只決定什麼時候使用它，而不必自己心算。",
+          "cite": [
+            "concepts/tool-use.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "在提示中先說明每個工具的功能與參數需求。",
+            "cite": [
+              "concepts/tool-use.md"
+            ]
+          },
+          {
+            "text": "模型判斷需要工具時，輸出特定格式的呼叫請求。",
+            "cite": [
+              "concepts/tool-use.md"
+            ]
+          },
+          {
+            "text": "外部程式執行工具，將結果回傳給模型繼續處理。",
+            "cite": [
+              "concepts/tool-use.md"
+            ]
+          }
+        ],
+        "notes": "講者說明：工具使用讓 LLM 不再只能靠內部知識產生文字，而是把實際運算交給外部程式。先以考試帶計算機的情境切入，說明什麼時候按下計算機、按什麼鍵，等同於模型決定何時呼叫工具、傳什麼參數。接著依照四步驟——介紹工具、提出請求、程式執行、結果回傳——逐一說明，並簡短舉課程實作例子（麥茶 20 杯、預算 800 元）。"
+      }
+    },
+    {
+      "id": "s08",
+      "type": "steps",
+      "title": "麥茶 20 杯夠不夠？",
+      "goal": "用課程的麥茶例子示範三階段：模型轉成請求 → 程式執行 → 依結果回答",
+      "pages": [
+        "concepts/tool-use.md",
+        "sources/tsai-2026-agent-notebooks.md"
+      ],
+      "visual": "none",
+      "content": {
+        "notes": "這張投影片示範課堂上「麥茶 20 杯，預算 800 元」的工具使用流程。先說明我們給模型的函式（quote_order），接著模型會把需求轉成 JSON 請求，程式收到後執行計算，最後把結果回傳讓模型完成回答。過程分成四個步驟，讓大家看見 LLM 不是直接算出答案，而是透過呼叫外部程式完成任務。",
+        "steps": [
+          {
+            "label": "介紹工具",
+            "text": "在提示中說明 `quote_order` 函式功能與參數（商品、數量）",
+            "cite": [
+              "concepts/tool-use.md"
+            ]
+          },
+          {
+            "label": "提出請求",
+            "text": "模型輸出 JSON 請求 `{tool:quote_order, item:麥茶, qty:20}`",
+            "cite": [
+              "concepts/tool-use.md"
+            ]
+          },
+          {
+            "label": "程式執行",
+            "text": "外部 Python 讀取請求，計算總價 600 元",
+            "cite": [
+              "sources/tsai-2026-agent-notebooks.md"
+            ]
+          },
+          {
+            "label": "結果回傳",
+            "text": "把計算結果 600 元送回模型，模型回覆「夠，還剩 200 元」",
+            "cite": [
+              "sources/tsai-2026-agent-notebooks.md"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "s09",
+      "type": "concept",
+      "title": "規劃：出國排行程",
+      "goal": "規劃有兩種意思：LLM 自己決定步驟，或先寫可編輯的計畫再照著做（可頌賣完了的例子）",
+      "pages": [
+        "concepts/planning.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "規劃是讓 LLM 自己決定要依序執行哪些步驟，將大任務拆成小任務完成（Ng 2024）。",
+          "cite": [
+            "concepts/planning.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像出國前排好行程：先決定景點與順序，現場若關閉再即時調整。",
+          "cite": [
+            "concepts/planning.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "LLM 先收到一個大目標，再把它拆成可執行的子任務（Ng 2024）。",
+            "cite": [
+              "concepts/planning.md"
+            ]
+          },
+          {
+            "text": "拆任務後，LLM 寫結構化計畫，列出每步工具與輸入輸出（Ng 2024）。",
+            "cite": [
+              "concepts/planning.md"
+            ]
+          },
+          {
+            "text": "執行遇問題時，代理即時改路，關鍵點停下請人確認防失控（Anthropic 2024）。",
+            "cite": [
+              "concepts/planning.md"
+            ]
+          }
+        ],
+        "notes": "本頁說明規劃的兩種意義：一是 LLM 自己決定步驟，二是先寫可編輯的計畫再照著做。用出國排程的生活比喻，讓大家感受「先決定行程、現場調整」的概念。重點在於目標→拆任務→寫計畫→執行→回饋與檢查點，這樣才能安全、有效地完成大任務。"
+      }
+    },
+    {
+      "id": "s10",
+      "type": "steps",
+      "title": "ReAct：想→做→看",
+      "goal": "用煮菜比喻和帶傘例子說明 想法 → 動作 → 觀察 的迴圈，它是代理最小的原型",
+      "pages": [
+        "concepts/react.md"
+      ],
+      "visual": "react_loop",
+      "content": {
+        "notes": "這張投影片用「煮菜」和「出門帶傘」的生活例子，說明 ReAct 的三個核心環節：先在腦中產生想法（思考下一步要做什麼），接著執行動作（讓模型去搜尋或執行指令），最後觀察環境回應（讀取搜尋結果或執行結果），再重複這個迴圈直到得到最終答案。",
+        "steps": [
+          {
+            "label": "想法",
+            "text": "模型文字推理下一步，如拆解目標或處理例外，只在上下文思考。",
+            "cite": [
+              "concepts/react.md"
+            ]
+          },
+          {
+            "label": "動作",
+            "text": "模型執行任務，如 search、lookup 或 finish，取得資訊。",
+            "cite": [
+              "concepts/react.md"
+            ]
+          },
+          {
+            "label": "觀察",
+            "text": "讀回環境回應，如 Wikipedia 前5句或天氣預報，供下輪想法。",
+            "cite": [
+              "concepts/react.md"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "s11",
+      "type": "concept",
+      "title": "多代理：分組報告",
+      "goal": "多個角色分工合作；研究小組的例子，效果好 90.2% 但 token 用量約 15 倍",
+      "pages": [
+        "concepts/multi-agent-collaboration.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "多個「代理」分工合作、互相討論，產出比單一代理更佳結果，通常以不同提示讓同一或多個 LLM 扮演不同角色。",
+          "cite": [
+            "concepts/multi-agent-collaboration.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像分組報告：有人查資料、有人做投影片、有人檢查，最後由組長整合成完整報告。",
+          "cite": [
+            "concepts/multi-agent-collaboration.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "研究顯示，多代理系統在內部評測中比單一代理好 90.2%。",
+            "cite": [
+              "concepts/multi-agent-collaboration.md"
+            ]
+          },
+          {
+            "text": "為達成更好效果，token 用量約是單代理的 15 倍。",
+            "cite": [
+              "concepts/multi-agent-collaboration.md"
+            ]
+          },
+          {
+            "text": "運作步驟包括拆角色、寫提示、各自執行、互相溝通、避免傳話遊戲。",
+            "cite": [
+              "concepts/multi-agent-collaboration.md"
+            ]
+          }
+        ],
+        "notes": "在這張投影片，我會先說明什麼是多代理協作，然後用分組報告的生活例子讓大家感受角色分工的好處。接著提到實驗結果：多代理比單一代理提升 90.2% 的表現，但代價是 token 用量約 15 倍。最後簡要說明五個運作步驟，讓同學了解實作流程。"
+      }
+    },
+    {
+      "id": "s12",
+      "type": "compare",
+      "title": "跟團 vs. 自由行",
+      "goal": "比較工作流程（程式寫死路徑）和代理（LLM 自己決定下一步）",
+      "pages": [
+        "concepts/workflow-vs-agent.md"
+      ],
+      "visual": "none",
+      "content": {
+        "left": {
+          "heading": "工作流程",
+          "points": [
+            {
+              "text": "路線由旅行社排好，穩定、可預期",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            },
+            {
+              "text": "適合任務能事先拆成固定步驟的情況",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            },
+            {
+              "text": "例：先寫大綱 → 程式檢查 → 依大綱寫全文",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            }
+          ]
+        },
+        "right": {
+          "heading": "代理",
+          "points": [
+            {
+              "text": "邊走邊決定下一站，彈性大但可能迷路、花費較高",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            },
+            {
+              "text": "適合步驟無法事先寫死，需要模型自行決策",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            },
+            {
+              "text": "例：SWE‑bench 代理自行決定要改哪些檔案",
+              "cite": [
+                "concepts/workflow-vs-agent.md"
+              ]
+            }
+          ]
+        },
+        "notes": "這張比較圖把工作流程比喻成跟團旅行，行程事先排好，結果穩定；而代理則像自由行，路線由模型即時決定，彈性高但成本與風險較大。說明何時適合選擇工作流程，何時需要代理，並給出兩個簡短例子，幫助同學快速掌握概念。"
+      }
+    },
+    {
+      "id": "s13",
+      "type": "concept",
+      "title": "能簡單就簡單",
+      "goal": "先試最簡單的方法，複雜度要證明有用才往上加",
+      "pages": [
+        "concepts/workflow-vs-agent.md",
+        "concepts/agentic-workflow.md"
+      ],
+      "visual": "ladder",
+      "content": {
+        "definition": {
+          "text": "工作流程讓 LLM 按事先寫好的程式路徑執行；代理讓 LLM 自己決定下一步與使用的工具。",
+          "cite": [
+            "concepts/workflow-vs-agent.md"
+          ]
+        },
+        "analogy": {
+          "text": "工作流程像跟團旅行，行程固定可預期；代理像自由行，邊走邊決定下一站，彈性大但可能迷路。",
+          "cite": [
+            "concepts/workflow-vs-agent.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "先試最簡單：單次 LLM 呼叫配檢索與範例，往往已足夠。",
+            "cite": [
+              "concepts/workflow-vs-agent.md"
+            ]
+          },
+          {
+            "text": "若步驟可事先寫死，選工作流程以獲得穩定結果；若無法寫死，改用代理取得彈性。",
+            "cite": [
+              "concepts/workflow-vs-agent.md"
+            ]
+          }
+        ],
+        "notes": "設計時先看能否用一次 LLM 呼叫加檢索或範例解決問題；只有當任務需要動態決策、步驟無法預先寫死時，才考慮代理式方案，這樣可控制成本，同時在需要時提升效能。"
+      }
+    },
+    {
+      "id": "s14",
+      "type": "quiz",
+      "title": "小測驗：誰在執行？",
+      "goal": "檢查觀眾是否懂：工具使用時真正執行的是程式，不是模型",
+      "pages": [
+        "concepts/tool-use.md"
+      ],
+      "visual": "none",
+      "content": {
+        "question": "在工具使用流程中，真正執行程式碼的是誰？",
+        "options": [
+          "LLM 本身直接執行",
+          "使用者手動點擊執行",
+          "外部程式根據請求執行"
+        ],
+        "answer": 2,
+        "explanation": {
+          "text": "外部程式偵測到 LLM 的 tool request，才會真正呼叫對應函式執行。",
+          "cite": [
+            "concepts/tool-use.md"
+          ]
+        },
+        "notes": "說明 LLM 只會產生呼叫指令，真正跑程式的是外部程式。舉例課程中 LLM 產生 JSON 請求，Python 程式算出結果再回傳。"
+      }
+    },
+    {
+      "id": "s15",
+      "type": "concept",
+      "title": "代理也會出包",
+      "goal": "代理的限制：卡在迴圈、自評有盲點、成本高、錯誤會累積",
+      "pages": [
+        "concepts/agent-limitations.md",
+        "concepts/llm-feedback.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "代理把 LLM 放入多步驟、可行動系統，放大其上下文有限、長程規劃不穩、格式不可靠等弱點。",
+          "cite": [
+            "concepts/agent-limitations.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像一位能幹的實習生：資料放不下、計畫被打亂會慌、報告格式偶爾錯，需主管把關。",
+          "cite": [
+            "concepts/agent-limitations.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "上下文塞不下且成本高：大量歷史或 API 回傳超出字數上限，錯誤累積會增加 API 費用。",
+            "cite": [
+              "concepts/agent-limitations.md"
+            ]
+          },
+          {
+            "text": "自評盲點：在專業領域 LLM 無法辨識自己的錯誤，評估結果可能不可靠。",
+            "cite": [
+              "concepts/agent-limitations.md"
+            ]
+          },
+          {
+            "text": "卡在迴圈：代理可能重複產生相同想法或動作，難以跳脫，常見於 ReAct 框架。",
+            "cite": [
+              "concepts/agent-limitations.md"
+            ]
+          }
+        ],
+        "notes": "各位同學，代理把聊天模型嵌入自動化流程，會放大模型的限制。資料太多會超出上下文，導致成本上升；自評時模型看不出專業錯誤；還可能陷入重複的迴圈。設計時要特別留意這些風險。"
+      }
+    },
+    {
+      "id": "s16",
+      "type": "concept",
+      "title": "AI 做事，人來把關",
+      "goal": "人在迴圈中：在關鍵處讓人檢查、修改、決定",
+      "pages": [
+        "concepts/human-in-the-loop.md"
+      ],
+      "visual": "none",
+      "content": {
+        "definition": {
+          "text": "在代理或工作流程的關鍵位置安排人來檢查、修改或決定，讓錯誤能及早被發現和修正，而不是只看最後的成品。",
+          "cite": [
+            "concepts/human-in-the-loop.md"
+          ]
+        },
+        "analogy": {
+          "text": "就像實習生寫報告，主管先在大綱階段看一次方向，最後定稿前再檢查一次，避免整份報告跑錯方向。",
+          "cite": [
+            "concepts/human-in-the-loop.md"
+          ]
+        },
+        "points": [
+          {
+            "text": "把代理的規劃步驟、想法或中間成果攤開，讓過程可見。",
+            "cite": [
+              "concepts/human-in-the-loop.md"
+            ]
+          },
+          {
+            "text": "在關鍵檢查點暫停，請人回饋並可直接修改中間成果。",
+            "cite": [
+              "concepts/human-in-the-loop.md"
+            ]
+          },
+          {
+            "text": "最終由人決定是否採用結果，並做人工測試找出自動評估漏掉的問題。",
+            "cite": [
+              "concepts/human-in-the-loop.md"
+            ]
+          }
+        ],
+        "notes": "這張投影片說明，AI 做事時，我們在關鍵環節插入人類檢查。先讓流程透明、設檢查點、允許即時修改，最後再由人決定採不採用，確保錯誤早發現、品質更可靠。"
+      }
+    },
+    {
+      "id": "s17",
+      "type": "quiz",
+      "title": "小測驗：該用代理嗎？",
+      "goal": "判斷什麼情況用工作流程就夠、什麼情況才需要代理",
+      "pages": [
+        "concepts/workflow-vs-agent.md",
+        "concepts/agent-limitations.md"
+      ],
+      "visual": "none",
+      "content": {
+        "question": "以下哪種情況最適合使用工作流程而不是代理？",
+        "options": [
+          "任務步驟可以事先寫死，且需要穩定一致的結果",
+          "任務需要模型自行決定下一步並動態選擇工具",
+          "任務涉及長程規劃且上下文資訊超過模型限制"
+        ],
+        "answer": 0,
+        "explanation": {
+          "text": "工作流程適合步驟可預先定義、需求穩定且可預測的情境；若任務無法事先寫死或需彈性決策，才考慮使用代理。",
+          "cite": [
+            "concepts/workflow-vs-agent.md",
+            "concepts/agent-limitations.md"
+          ]
+        },
+        "notes": "講者說明：先提醒同學工作流程是「跟團旅行」的概念，步驟固定、結果可預期；代理則像自由行，需要模型自行決策。題目聚焦在「什麼情況只需要工作流程」的判斷，答案是第一項。解釋時再次強調工作流程的適用條件，並簡要提到代理的限制，如上下文不足、長程規劃不穩等。"
+      }
+    },
+    {
+      "id": "s18",
+      "type": "summary",
+      "title": "本章重點",
+      "goal": "回顧：分多步工作、四種模式、能簡單就簡單、AI 做事人來把關",
+      "pages": [
+        "overview.md",
+        "concepts/workflow-vs-agent.md",
+        "concepts/human-in-the-loop.md"
+      ],
+      "visual": "none",
+      "content": {
+        "notes": "這張投影片快速回顧本章核心概念：AI 代理其實是把同一個模型拆成多步工作，依需求從最簡單的單次呼叫開始，逐步加上工作流程或代理的彈性；四種主要招式（反思、工具使用、規劃、多代理）提供不同穩定度；最後，透過 Human‑in‑the‑loop 把關，讓人類在關鍵環節檢查、修正，確保結果可靠。",
+        "points": [
+          {
+            "text": "AI 代理是讓模型分多步工作，簡單就簡單（單次 LLM 呼叫）",
+            "cite": [
+              "overview.md"
+            ]
+          },
+          {
+            "text": "四種模式：反思、工具使用、規劃、多代理，穩定度由高到較難預測",
+            "cite": [
+              "overview.md"
+            ]
+          },
+          {
+            "text": "工作流程 vs. 代理：前者固定路徑像跟團，後者自行決策像自由行",
+            "cite": [
+              "concepts/workflow-vs-agent.md"
+            ]
+          },
+          {
+            "text": "Human‑in‑the‑loop：在關鍵步驟加入人工檢查與修正",
+            "cite": [
+              "concepts/human-in-the-loop.md"
+            ]
+          },
+          {
+            "text": "只在證明有效時才提升複雜度，保持系統可控與成本效益",
+            "cite": [
+              "overview.md"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

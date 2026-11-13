@@ -1,0 +1,15 @@
+{"kind": "node", "node": "load_wiki", "seconds": 0.2, "info": {"lint_errors": 0, "lint_warnings": 0, "gaps": 1, "pages": 40}, "time": "2026-11-13T00:05:49"}
+{"kind": "node", "node": "retrieve", "seconds": 0.0, "info": {"chars": 18791}, "time": "2026-11-13T00:05:49"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 18.0, "time": "2026-11-13T00:05:53"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 6.0, "time": "2026-11-13T00:06:12"}
+{"kind": "format_error", "node": "draft_slides", "detail": "draft_slides：Groq JSON 模式回報輸出不是合法 JSON", "time": "2026-11-13T00:06:21"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 17.0, "time": "2026-11-13T00:06:21"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 1.0, "time": "2026-11-13T00:06:39"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 4.0, "time": "2026-11-13T00:06:41"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 14.0, "time": "2026-11-13T00:06:49"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 32.0, "time": "2026-11-13T00:07:06"}
+{"kind": "format_error", "node": "draft_slides", "detail": "最外層必須是 JSON 物件", "time": "2026-11-13T00:07:42"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 23.0, "time": "2026-11-13T00:07:42"}
+{"kind": "rate_limited", "node": "draft_slides", "wait": 6.0, "time": "2026-11-13T00:08:06"}
+{"kind": "format_error", "node": "draft_slides", "detail": "draft_slides：Groq JSON 模式回報輸出不是合法 JSON", "time": "2026-11-13T00:08:15"}
+{"kind": "node", "node": "draft_slides", "seconds": 146.4, "error": "draft_slides：連續兩次輸出不是合法 JSON", "time": "2026-11-13T00:08:15"}
